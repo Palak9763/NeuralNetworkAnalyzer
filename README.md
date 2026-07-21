@@ -1,4 +1,5 @@
 # NeuralNetworkAnalyzer
+<<<<<<< HEAD
 
 Upload a PyTorch model → get an interactive, auto-generated architecture
 diagram (React Flow), with real layer shapes, parameter counts, and a
@@ -210,3 +211,7 @@ exists in the contract so nothing downstream needs to change later.
 
 Build strictly in this order — each phase should be working and tested
 before the next one starts.
+=======
+#Team Members :Sarthak Darandale,Palak Deshmukh
+NeuralNetworkAnalyzer is a full-stack AI platform that automatically detects deep learning frameworks, parses neural network architectures from uploaded projects or model files, and generates interactive architecture diagrams. Supports PyTorch, TensorFlow, JAX, and custom models with a universal graph visualization engine.
+>>>>>>> e9ef88b6d7a7fb1b04db89ad55657cd0af718e86
