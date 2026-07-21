@@ -68,17 +68,25 @@ def _find_and_instantiate_model(module):
     if not model_classes:
         raise ModelParsingError("No nn.Module subclass found in uploaded file.")
 
-    model_class = model_classes[0]
-    try:
-        model = model_class()
-    except TypeError as exc:
-        raise ModelParsingError(
-            f"Model class '{model_class.__name__}' requires constructor arguments "
-            f"that could not be inferred automatically: {exc}"
-        ) from exc
+    # Prefer the LAST-defined class first: helper/building-block classes
+    # (e.g. a BasicBlock or ResidualBlock used inside a bigger model) are
+    # conventionally defined before the top-level model that composes
+    # them. Try each candidate with no constructor args, most-likely-main
+    # first, falling back through the rest before giving up.
+    last_error: TypeError | None = None
+    for model_class in reversed(model_classes):
+        try:
+            model = model_class()
+        except TypeError as exc:
+            last_error = exc
+            continue
+        model.eval()
+        return model, model_class.__name__
 
-    model.eval()
-    return model, model_class.__name__
+    raise ModelParsingError(
+        f"None of the {len(model_classes)} nn.Module subclass(es) found could be "
+        f"instantiated without constructor arguments. Last error: {last_error}"
+    )
 
 
 def run_torch_fx(file_path: Path) -> RawParseResult:
@@ -139,6 +147,37 @@ def run_torch_fx(file_path: Path) -> RawParseResult:
     node_id_by_target: dict[str, str] = {}
     counter = 0
 
+    _ADD_LIKE_TARGETS = {"add", "add_", "iadd", "__add__", "__iadd__"}
+
+    def _is_add_like(fx_op_node) -> bool:
+        if fx_op_node.op == "call_method" and fx_op_node.target in _ADD_LIKE_TARGETS:
+            return True
+        if fx_op_node.op == "call_function":
+            target_name = getattr(fx_op_node.target, "__name__", str(fx_op_node.target))
+            if target_name in _ADD_LIKE_TARGETS:
+                return True
+        return False
+
+    def _resolve_module_predecessors(arg, via_add=False, _depth=0):
+        """
+        Walk backwards through non-call_module fx nodes (add, cat, view,
+        flatten, etc.) until reaching real call_module nodes, so that an
+        intermediate op like a residual `x + shortcut` doesn't silently
+        break the edge between the two real layers on either side of it.
+        Returns a list of (module_target, passed_through_add) tuples.
+        Depth-limited as a safety guard against pathological graphs.
+        """
+        if _depth > 25 or not hasattr(arg, "op"):
+            return []
+        if arg.op == "call_module":
+            return [(arg.target, via_add)]
+
+        is_add = via_add or _is_add_like(arg)
+        results = []
+        for sub_arg in arg.args:
+            results.extend(_resolve_module_predecessors(sub_arg, via_add=is_add, _depth=_depth + 1))
+        return results
+
     for fx_node in traced.graph.nodes:
         if fx_node.op != "call_module":
             continue
@@ -158,10 +197,42 @@ def run_torch_fx(file_path: Path) -> RawParseResult:
             output_shape=out_shape,
         ))
 
+        # Resolve predecessors through any intermediate non-module ops
+        # (residual adds, torch.cat, .view, .flatten, etc.) rather than
+        # only looking at the immediate arg - this is what lets skip/
+        # residual connections survive into the graph at all.
+        predecessors: list[tuple[str, bool]] = []
         for arg in fx_node.args:
-            arg_target = getattr(arg, "target", None)
-            if arg_target in node_id_by_target:
-                edges.append(RawEdge(source=node_id_by_target[arg_target], target=node_id))
+            predecessors.extend(_resolve_module_predecessors(arg))
+
+        # De-duplicate while preserving first-seen order (a node can
+        # appear once even if referenced through multiple argument paths).
+        seen: set[str] = set()
+        unique_predecessors: list[tuple[str, bool]] = []
+        for target, via_add in predecessors:
+            if target not in seen:
+                seen.add(target)
+                unique_predecessors.append((target, via_add))
+
+        # A residual merge point looks like: 2+ distinct module
+        # predecessors reaching this node, at least one of them arriving
+        # through an add-like op. Heuristic for which branch is the
+        # "skip": whichever predecessor is NOT the most recently traced
+        # module (i.e. not immediately preceding in execution order) is
+        # the shortcut/identity branch - the main path is the one that
+        # was just processed right before this merge.
+        is_residual_merge = len(unique_predecessors) >= 2 and any(v for _, v in unique_predecessors)
+        most_recent_target = nodes[-2].label if len(nodes) >= 2 else None
+
+        for target, _via_add in unique_predecessors:
+            if target not in node_id_by_target:
+                continue
+            is_skip = is_residual_merge and target != most_recent_target
+            edges.append(RawEdge(
+                source=node_id_by_target[target],
+                target=node_id,
+                is_skip_connection=is_skip,
+            ))
 
     if not nodes:
         raise ModelParsingError("torch.fx trace produced no call_module nodes.")

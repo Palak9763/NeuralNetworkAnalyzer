@@ -58,6 +58,27 @@ class GraphEdge(BaseModel):
     is_skip_connection: bool = False
 
 
+class GroupType(str, Enum):
+    CONV_BLOCK = "conv_block"        # e.g. Conv2d + BatchNorm2d + ReLU collapsed
+    RESIDUAL_BLOCK = "residual_block"  # a full skip-connection block (conv chain + shortcut merge)
+    STAGE = "stage"                    # a container of N repeated identical blocks
+
+
+class GraphGroup(BaseModel):
+    id: str = Field(..., description="Unique group identifier, e.g. 'group_3'")
+    label: str = Field(..., description="Display label, e.g. 'ConvBlock' or 'Stage 1 (3 blocks)'")
+    type: GroupType
+    member_node_ids: list[str] = Field(
+        default_factory=list, description="Node ids directly inside this group (not counting nested groups)"
+    )
+    parent_group_id: Optional[str] = Field(
+        default=None, description="Set when this group is nested inside a Stage group"
+    )
+    repeat_count: int = Field(
+        default=1, description="How many structurally-identical instances this group represents (Phase 3.3)"
+    )
+
+
 class GraphMeta(BaseModel):
     framework: Framework
     confidence: Confidence
@@ -77,6 +98,9 @@ class UniversalGraph(BaseModel):
     meta: GraphMeta
     nodes: list[GraphNode]
     edges: list[GraphEdge]
+    groups: list[GraphGroup] = Field(
+        default_factory=list, description="Populated by the grouping engine (Phase 3); empty means no grouping was applied"
+    )
 
 
 class UploadResponse(BaseModel):

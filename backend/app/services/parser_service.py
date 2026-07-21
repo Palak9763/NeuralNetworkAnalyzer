@@ -25,12 +25,13 @@ What it does:
        c. If the pretrained path itself fails, it also falls back to AST
           as a last resort (in case the file happens to ALSO define a
           class alongside the from_pretrained call).
-    4. Converts whichever raw result succeeded into a UniversalGraph
+    4. Converts whichever raw result succeeded into a UniversalGraph, then
+       runs the grouping engine (Phase 3) as the final step.
 
 How it connects:
     Called by api/routes/graph.py. Depends on engines/detector,
-    engines/pytorch/{fx_parser,ast_parser,pretrained_parser}, and
-    engines/graph/universal_graph.
+    engines/pytorch/{fx_parser,ast_parser,pretrained_parser},
+    engines/graph/universal_graph, and engines/graph/grouping_engine.
 """
 
 import logging
@@ -38,6 +39,7 @@ from pathlib import Path
 
 from app.core.exceptions import FrameworkNotSupportedError, ModelParsingError
 from app.engines.detector.framework_detector import detect_framework
+from app.engines.graph.grouping_engine import build_groups
 from app.engines.graph.universal_graph import build_universal_graph
 from app.engines.pytorch.ast_parser import parse_with_ast
 from app.engines.pytorch.fx_parser import run_torch_fx
@@ -122,4 +124,5 @@ def parse_project(job_id: str, model_file: Path) -> UniversalGraph:
         )
 
     raw, confidence = _parse_pytorch_file(job_id, model_file)
-    return build_universal_graph(job_id=job_id, raw=raw, framework=framework, confidence=confidence)
+    graph = build_universal_graph(job_id=job_id, raw=raw, framework=framework, confidence=confidence)
+    return build_groups(graph)
