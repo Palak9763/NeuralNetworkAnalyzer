@@ -60,17 +60,68 @@ class RawParseResult:
     warnings: list[str] = field(default_factory=list)
 
 
-def _is_nn_module_class(node: ast.ClassDef) -> bool:
+def _base_is_torch_module(base: ast.expr) -> bool:
+    """
+    True if a base-class expression refers to torch's Module, regardless of
+    how it was imported: nn.Module, torch.nn.Module, Module (bare, from
+    `from torch.nn import Module`), or any other alias ending in '.Module'.
+    """
+    base_name = ast.unparse(base) if hasattr(ast, "unparse") else ""
+    return base_name.split(".")[-1] == "Module"
+
+
+def _is_nn_module_class(node: ast.ClassDef, class_map: dict[str, ast.ClassDef], _seen: set[str] | None = None) -> bool:
+    """
+    True if this class inherits from torch's Module, either directly
+    (class Net(nn.Module)) or transitively through a locally-defined
+    custom base class (class Base(nn.Module) -> class Net(Base)).
+    _seen guards against infinite recursion on circular/self-referential
+    definitions.
+    """
+    _seen = _seen or set()
+    if node.name in _seen:
+        return False
+    _seen.add(node.name)
+
     for base in node.bases:
+        if _base_is_torch_module(base):
+            return True
         base_name = ast.unparse(base) if hasattr(ast, "unparse") else ""
-        if "nn.Module" in base_name or base_name == "Module":
+        base_class_name = base_name.split(".")[-1]
+        if base_class_name in class_map and _is_nn_module_class(class_map[base_class_name], class_map, _seen):
             return True
     return False
 
 
 def _find_model_class(tree: ast.Module) -> ast.ClassDef | None:
-    candidates = [n for n in ast.walk(tree) if isinstance(n, ast.ClassDef) and _is_nn_module_class(n)]
-    return candidates[0] if candidates else None
+    all_classes = [n for n in ast.walk(tree) if isinstance(n, ast.ClassDef)]
+    class_map = {c.name: c for c in all_classes}
+
+    candidates = [n for n in all_classes if _is_nn_module_class(n, class_map)]
+    if not candidates:
+        return None
+
+    if len(candidates) == 1:
+        return candidates[0]
+
+    # Multiple nn.Module subclasses (common: a GAN's Generator+Discriminator,
+    # or a custom BaseModel plus its subclasses). Prefer the "leaf" model:
+    # one that (a) has a forward() method, and (b) is not itself used as a
+    # base class by another candidate - i.e. the main model, not a shared
+    # base class. Falls back to the last-defined candidate (main model is
+    # conventionally defined last, after its building blocks).
+    base_names_in_use = {
+        ast.unparse(base).split(".")[-1]
+        for c in candidates
+        for base in c.bases
+    }
+    leaf_candidates = [c for c in candidates if c.name not in base_names_in_use]
+    pool = leaf_candidates or candidates
+
+    with_forward = [c for c in pool if any(isinstance(n, ast.FunctionDef) and n.name == "forward" for n in c.body)]
+    pool = with_forward or pool
+
+    return pool[-1]
 
 
 def _extract_layer_definitions(init_method: ast.FunctionDef) -> dict[str, RawNode]:
