@@ -24,7 +24,7 @@ How it connects:
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Framework(str, Enum):
@@ -70,6 +70,8 @@ class GraphMeta(BaseModel):
 
 
 class UniversalGraph(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+
     job_id: str
     model_name: str
     meta: GraphMeta
