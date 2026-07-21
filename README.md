@@ -1,4 +1,6 @@
 # NeuralNetworkAnalyzer
+
+Arya Gandhi
 <<<<<<< HEAD
 
 Upload a PyTorch model → get an interactive, auto-generated architecture
