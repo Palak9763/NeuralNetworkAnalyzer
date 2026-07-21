@@ -1,4 +1,4 @@
-Arya Gandhi
+
 # NeuralNetworkAnalyzer
 <<<<<<< HEAD
 
