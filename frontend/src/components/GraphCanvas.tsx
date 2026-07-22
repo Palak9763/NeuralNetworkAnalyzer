@@ -125,20 +125,22 @@ export default function GraphCanvas({ graph, onNodeClick }: GraphCanvasProps) {
   }, [graph]);
 
   return (
-    <ReactFlow
-      nodes={nodes}
-      edges={edges}
-      onNodeClick={(_, node) => onNodeClick(node.data.raw as GraphNode)}
-      fitView
-      proOptions={{ hideAttribution: true }}
-    >
-      <Background color="#1f2230" gap={20} />
-      <Controls />
-      <MiniMap
-        nodeColor={(n) => (n.style?.background as string) ?? "#334155"}
-        maskColor="rgba(13,14,20,0.8)"
-        style={{ background: "#12141c" }}
-      />
-    </ReactFlow>
+    <div id="reactflow-wrapper" style={{ width: "100%", height: "100%" }}>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodeClick={(_, node) => onNodeClick(node.data.raw as GraphNode)}
+        fitView
+        proOptions={{ hideAttribution: true }}
+      >
+        <Background color="#1f2230" gap={20} />
+        <Controls />
+        <MiniMap
+          nodeColor={(n) => (n.style?.background as string) ?? "#334155"}
+          maskColor="rgba(13,14,20,0.8)"
+          style={{ background: "#12141c" }}
+        />
+      </ReactFlow>
+    </div>
   );
 }

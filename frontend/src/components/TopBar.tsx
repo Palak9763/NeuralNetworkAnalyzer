@@ -17,6 +17,113 @@ interface TopBarProps {
 }
 
 export default function TopBar({ graph }: TopBarProps) {
+  const handleDownload = () => {
+    if (!graph) return;
+    const dataStr = JSON.stringify(graph, null, 2);
+    const dataBlob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${graph.model_name || "graph"}-architecture.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleShare = async () => {
+    if (!graph) return;
+    // Prefer sharing a job-specific link so recipients can load the same graph
+    const jobId = (graph as any).job_id || (graph.job_id as unknown as string);
+    const base = window.location.origin + window.location.pathname;
+    const shareUrl = jobId ? `${base}?job=${encodeURIComponent(jobId)}` : window.location.href;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        alert("Share link copied to clipboard");
+        return;
+      }
+    } catch (e) {
+      // fallthrough to copying graph JSON
+    }
+
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(graph));
+      alert("Graph JSON copied to clipboard");
+    } catch (e) {
+      alert("Unable to copy to clipboard");
+    }
+  };
+
+  const handleExport = async () => {
+    if (!graph) return;
+    const wrapper = document.getElementById("reactflow-wrapper");
+    if (wrapper) {
+      // try to find the internal renderer element used by React Flow
+      const renderer =
+        (wrapper.querySelector(".reactflow__renderer") as HTMLElement) ||
+        (wrapper.querySelector(".react-flow__renderer") as HTMLElement) ||
+        (wrapper.querySelector(".reactflow") as HTMLElement) ||
+        wrapper;
+
+      // compute full size to capture
+      const width = Math.max(
+        renderer.scrollWidth,
+        renderer.getBoundingClientRect().width
+      );
+      const height = Math.max(
+        renderer.scrollHeight,
+        renderer.getBoundingClientRect().height
+      );
+
+      // save original styles
+      const origWidth = wrapper.style.width;
+      const origHeight = wrapper.style.height;
+      const origOverflow = wrapper.style.overflow;
+
+      try {
+        // temporarily expand wrapper to full content size so html-to-image can capture everything
+        wrapper.style.width = `${width}px`;
+        wrapper.style.height = `${height}px`;
+        wrapper.style.overflow = "visible";
+
+        const htmlToImage = await import("html-to-image");
+        const dataUrl = await htmlToImage.toPng(wrapper as HTMLElement, {
+          width,
+          height,
+          backgroundColor: "#0b0f17",
+        });
+        const link = document.createElement("a");
+        link.href = dataUrl;
+        link.download = `${graph.model_name || "graph"}-graph.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        return;
+      } catch (e) {
+        // fall back to JSON export below
+      } finally {
+        // restore original styles
+        wrapper.style.width = origWidth;
+        wrapper.style.height = origHeight;
+        wrapper.style.overflow = origOverflow;
+      }
+    }
+
+    // Fallback: export JSON
+    const dataStr = JSON.stringify(graph, null, 2);
+    const dataBlob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${graph.model_name || "graph"}-export.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <header className="h-16 shrink-0 border-b border-white/5 flex items-center justify-between px-6 bg-panel">
       <div className="flex items-center gap-3">
@@ -42,13 +149,23 @@ export default function TopBar({ graph }: TopBarProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        <button className="text-sm text-gray-300 border border-white/10 px-3 py-1.5 rounded-lg hover:bg-white/5" disabled>
+        <button 
+          onClick={handleDownload}
+          disabled={!graph}
+          className="text-sm text-gray-300 border border-white/10 px-3 py-1.5 rounded-lg hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           ↓ Download
         </button>
-        <button className="text-sm text-gray-300 border border-white/10 px-3 py-1.5 rounded-lg hover:bg-white/5" disabled>
+        <button
+          onClick={handleShare}
+          className="text-sm text-gray-300 border border-white/10 px-3 py-1.5 rounded-lg hover:bg-white/5"
+        >
           ⇧ Share
         </button>
-        <button className="text-sm bg-accent text-white px-3 py-1.5 rounded-lg hover:bg-accent/90" disabled>
+        <button
+          onClick={handleExport}
+          className="text-sm bg-accent text-white px-3 py-1.5 rounded-lg hover:bg-accent/90"
+        >
           Export
         </button>
       </div>
