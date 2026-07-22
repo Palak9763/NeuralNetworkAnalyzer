@@ -203,7 +203,7 @@ exists in the contract so nothing downstream needs to change later.
 |---|---|
 | 1 ✅ | Core parsing engine: upload, framework detection, torch.fx + AST chain, Universal Graph JSON |
 | 2 ✅ | React Flow rendering, Layer Properties panel, Model Summary, Layer Table |
-| 3 | Grouping engine: collapse Conv+BN+ReLU into blocks, detect skip connections, detect repeated blocks (`Block × N`) |
+| 3 ✅  | Grouping engine: collapse Conv+BN+ReLU into blocks, detect skip connections, detect repeated blocks (`Block × N`) |
 | 4 | Real layout engine (Dagre.js/ELK.js) replacing the simple depth-based layout |
 | 5 | FLOPs + param breakdown (torchinfo/fvcore), Code Preview tab |
 | 6 | PostgreSQL + SQLAlchemy models, JWT auth, Projects/Saved Graphs/History pages |
