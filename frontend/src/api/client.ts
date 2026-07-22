@@ -30,3 +30,8 @@ export async function fetchGraph(jobId: string): Promise<UniversalGraph> {
   const response = await axios.get<UniversalGraph>(`${API_BASE}/api/v1/graph/${jobId}`);
   return response.data;
 }
+
+export async function fetchUploads(): Promise<Array<{job_id: string; filename: string; uploaded_at: string;}>> {
+  const response = await axios.get(`${API_BASE}/api/v1/uploads`);
+  return response.data;
+}

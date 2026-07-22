@@ -12,24 +12,43 @@
  *   UniversalGraph down to GraphCanvas, ModelSummary, and LayerTable.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "./components/Sidebar";
+import Dashboard from "./components/Dashboard";
 import TopBar from "./components/TopBar";
 import GraphCanvas from "./components/GraphCanvas";
 import LayerPropertiesPanel from "./components/LayerPropertiesPanel";
 import ModelSummary from "./components/ModelSummary";
 import LayerTable from "./components/LayerTable";
 import UploadModal from "./components/UploadModal";
+import { fetchGraph } from "./api/client";
 import type { GraphNode, UniversalGraph } from "./types/graph";
 
 export default function App() {
   const [graph, setGraph] = useState<UniversalGraph | null>(null);
+  const [page, setPage] = useState<string>("visualizer");
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [showUpload, setShowUpload] = useState(false);
 
+  useEffect(() => {
+    // If a shared link includes ?job=<job_id>, fetch that graph on load
+    const params = new URLSearchParams(window.location.search);
+    const job = params.get("job");
+    if (job) {
+      (async () => {
+        try {
+          const g = await fetchGraph(job);
+          setGraph(g);
+        } catch (e) {
+          // ignore - user can upload instead
+        }
+      })();
+    }
+  }, []);
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#0d0e14]">
-      <Sidebar onUploadClick={() => setShowUpload(true)} />
+      <Sidebar onUploadClick={() => setShowUpload(true)} currentPage={page} onNavigate={setPage} />
 
       <div className="flex-1 flex flex-col min-w-0">
         <TopBar graph={graph} />
@@ -37,16 +56,28 @@ export default function App() {
         <div className="flex-1 flex min-h-0">
           <main className="flex-1 flex flex-col min-w-0">
             <div className="flex-1 min-h-0">
-              {graph ? (
-                <GraphCanvas graph={graph} onNodeClick={setSelectedNode} />
+              {page === "dashboard" ? (
+                <Dashboard
+                  onLoadGraph={(g: UniversalGraph) => {
+                    setGraph(g);
+                    setSelectedNode(null);
+                    setPage("visualizer");
+                  }}
+                />
+              ) : page === "visualizer" ? (
+                graph ? (
+                  <GraphCanvas graph={graph} onNodeClick={setSelectedNode} />
+                ) : (
+                  <div className="h-full flex items-center justify-center text-gray-600 text-sm">
+                    Upload a PyTorch project to see its architecture diagram here.
+                  </div>
+                )
               ) : (
-                <div className="h-full flex items-center justify-center text-gray-600 text-sm">
-                  Upload a PyTorch project to see its architecture diagram here.
-                </div>
+                <div className="h-full flex items-center justify-center text-gray-600 text-sm">Page not implemented</div>
               )}
             </div>
 
-            {graph && (
+            {graph && page === "visualizer" && (
               <div className="h-56 shrink-0 grid grid-cols-2 gap-4 p-4 border-t border-white/5">
                 <ModelSummary graph={graph} />
                 <LayerTable graph={graph} />

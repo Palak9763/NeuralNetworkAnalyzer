@@ -14,11 +14,13 @@
 
 interface SidebarProps {
   onUploadClick: () => void;
+  currentPage: string;
+  onNavigate: (page: string) => void;
 }
 
 const NAV_ITEMS = [
-  { label: "Dashboard", enabled: false },
-  { label: "Visualizer", enabled: true },
+  { key: "dashboard", label: "Dashboard", enabled: true },
+  { key: "visualizer", label: "Visualizer", enabled: true },
   { label: "Projects", enabled: false },
   { label: "Saved Graphs", enabled: false },
   { label: "History", enabled: false },
@@ -27,7 +29,7 @@ const NAV_ITEMS = [
   { label: "Help", enabled: false },
 ];
 
-export default function Sidebar({ onUploadClick }: SidebarProps) {
+export default function Sidebar({ onUploadClick, currentPage, onNavigate }: SidebarProps) {
   return (
     <aside className="w-56 shrink-0 bg-panel border-r border-white/5 flex flex-col h-screen text-gray-300">
       <div className="px-5 py-6 flex items-center gap-2 text-white font-semibold text-lg">
@@ -45,11 +47,12 @@ export default function Sidebar({ onUploadClick }: SidebarProps) {
       </div>
 
       <nav className="flex-1 px-2 space-y-1">
-        {NAV_ITEMS.map((item) => (
+        {NAV_ITEMS.map((item: any) => (
           <div
-            key={item.label}
+            key={item.label || item.key}
+            onClick={() => item.enabled && onNavigate(item.key || item.label)}
             className={`px-3 py-2 rounded-lg text-sm cursor-pointer ${
-              item.label === "Visualizer"
+              currentPage === (item.key || item.label)
                 ? "bg-white/5 text-white"
                 : item.enabled
                 ? "hover:bg-white/5"
