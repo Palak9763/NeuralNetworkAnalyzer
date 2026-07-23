@@ -10,3 +10,5 @@ transformers>=4.40
 fvcore
 sqlalchemy
 psycopg2-binary
+pyjwt
+passlib[bcrypt]

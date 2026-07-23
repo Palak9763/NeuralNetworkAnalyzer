@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     api_prefix: str = "/api/v1"
     database_url: Optional[str] = None
 
+    # Security
+    jwt_secret_key: str = "default_nna_development_secret_key_change_me"
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 60 * 24 * 7
+
     # Storage
     storage_root: Path = Path(__file__).resolve().parent.parent.parent / "storage"
     upload_dir_name: str = "uploads"

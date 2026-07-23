@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.models.project import Project
+from app.models.user import User
+from app.api.deps import get_current_user
 from app.schemas.project import ProjectCreate, ProjectResponse
 from app.schemas.graph import UniversalGraph
 
@@ -12,16 +14,21 @@ router = APIRouter(prefix="/api/v1/projects", tags=["projects"])
 
 
 @router.post("", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
-async def create_project(project_in: ProjectCreate, db: Session = Depends(get_db)) -> ProjectResponse:
+async def create_project(
+    project_in: ProjectCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ProjectResponse:
     try:
         new_project = Project(
             name=project_in.name,
             description=project_in.description,
+            owner_id=current_user.user_id,
         )
         db.add(new_project)
         db.commit()
         db.refresh(new_project)
-        logger.info("Created new project: %s (id=%s)", new_project.name, new_project.project_id)
+        logger.info("Created new project: %s (id=%s, owner=%s)", new_project.name, new_project.project_id, current_user.email)
         return ProjectResponse(
             project_id=new_project.project_id,
             name=new_project.name,
@@ -38,9 +45,12 @@ async def create_project(project_in: ProjectCreate, db: Session = Depends(get_db
 
 
 @router.get("", response_model=list[ProjectResponse])
-async def list_projects(db: Session = Depends(get_db)) -> list[ProjectResponse]:
+async def list_projects(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[ProjectResponse]:
     try:
-        projects = db.query(Project).all()
+        projects = db.query(Project).filter(Project.owner_id == current_user.user_id).all()
         return [
             ProjectResponse(
                 project_id=p.project_id,
@@ -60,8 +70,15 @@ async def list_projects(db: Session = Depends(get_db)) -> list[ProjectResponse]:
 
 
 @router.get("/{project_id}", response_model=ProjectResponse)
-async def get_project(project_id: str, db: Session = Depends(get_db)) -> ProjectResponse:
-    p = db.query(Project).filter(Project.project_id == project_id).first()
+async def get_project(
+    project_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ProjectResponse:
+    p = db.query(Project).filter(
+        Project.project_id == project_id,
+        Project.owner_id == current_user.user_id
+    ).first()
     if not p:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
     return ProjectResponse(
@@ -74,14 +91,21 @@ async def get_project(project_id: str, db: Session = Depends(get_db)) -> Project
 
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_project(project_id: str, db: Session = Depends(get_db)) -> None:
-    p = db.query(Project).filter(Project.project_id == project_id).first()
+async def delete_project(
+    project_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> None:
+    p = db.query(Project).filter(
+        Project.project_id == project_id,
+        Project.owner_id == current_user.user_id
+    ).first()
     if not p:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
     try:
         db.delete(p)
         db.commit()
-        logger.info("Deleted project id=%s (graphs cascade-deleted)", project_id)
+        logger.info("Deleted project id=%s for user=%s", project_id, current_user.email)
     except Exception as exc:  # noqa: BLE001
         logger.exception("Failed to delete project")
         raise HTTPException(
@@ -91,8 +115,15 @@ async def delete_project(project_id: str, db: Session = Depends(get_db)) -> None
 
 
 @router.get("/{project_id}/graphs", response_model=list[UniversalGraph])
-async def list_project_graphs(project_id: str, db: Session = Depends(get_db)) -> list[UniversalGraph]:
-    p = db.query(Project).filter(Project.project_id == project_id).first()
+async def list_project_graphs(
+    project_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[UniversalGraph]:
+    p = db.query(Project).filter(
+        Project.project_id == project_id,
+        Project.owner_id == current_user.user_id
+    ).first()
     if not p:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
     
