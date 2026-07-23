@@ -1,11 +1,13 @@
 import datetime
-from sqlalchemy import Column, String, Integer, BigInteger, DateTime, JSON, Text
+from sqlalchemy import Column, String, Integer, BigInteger, DateTime, JSON, Text, ForeignKey
+from sqlalchemy.orm import relationship
 from app.db.session import Base
 
 class SavedGraph(Base):
     __tablename__ = "saved_graphs"
 
     job_id = Column(String, primary_key=True, index=True)
+    project_id = Column(String, ForeignKey("projects.project_id", ondelete="CASCADE"), nullable=True)
     model_name = Column(String, nullable=False)
     framework = Column(String, nullable=False)
     confidence = Column(String, nullable=False)
@@ -19,3 +21,6 @@ class SavedGraph(Base):
     filename = Column(String, nullable=False)
     code = Column(Text, nullable=False)
     uploaded_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    # Relationship back to Project
+    project = relationship("Project", back_populates="graphs")

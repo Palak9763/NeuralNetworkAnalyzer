@@ -19,13 +19,23 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import graph, health, source, upload, uploads
+from app.api.routes import graph, health, source, upload, uploads, projects
 from app.core.config import settings
 from app.db.session import Base, engine
 from app.models.graph import SavedGraph
+from app.models.project import Project
+from sqlalchemy import inspect, text
 
 # Create database tables automatically
 Base.metadata.create_all(bind=engine)
+
+# Lightweight migration for adding project_id column if it doesn't exist
+inspector = inspect(engine)
+if "saved_graphs" in inspector.get_table_names():
+    columns = [col["name"] for col in inspector.get_columns("saved_graphs")]
+    if "project_id" not in columns:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE saved_graphs ADD COLUMN project_id VARCHAR;"))
 
 logging.basicConfig(
     level=logging.INFO,
@@ -50,6 +60,7 @@ app.include_router(upload.router)
 app.include_router(graph.router)
 app.include_router(source.router)
 app.include_router(uploads.router)
+app.include_router(projects.router)
 
 @app.get("/")
 async def root() -> dict:

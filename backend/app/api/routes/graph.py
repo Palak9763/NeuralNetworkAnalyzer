@@ -26,6 +26,7 @@ How it connects:
 """
 
 import logging
+from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends, status
 from sqlalchemy.orm import Session
 
@@ -35,17 +36,32 @@ from app.services.parser_service import parse_project
 from app.services.upload_service import resolve_candidate_model_file
 from app.db.session import get_db
 from app.models.graph import SavedGraph
+from app.models.project import Project
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1", tags=["graph"])
 
 
 @router.get("/graph/{job_id}", response_model=UniversalGraph, status_code=status.HTTP_200_OK)
-async def get_graph(job_id: str, db: Session = Depends(get_db)) -> UniversalGraph:
+async def get_graph(
+    job_id: str,
+    project_id: Optional[str] = None,
+    db: Session = Depends(get_db)
+) -> UniversalGraph:
     # 1. Query the database first
     try:
         db_graph = db.query(SavedGraph).filter(SavedGraph.job_id == job_id).first()
         if db_graph:
+            # If project_id is provided and different, update it
+            if project_id and db_graph.project_id != project_id:
+                proj = db.query(Project).filter(Project.project_id == project_id).first()
+                if proj:
+                    db_graph.project_id = project_id
+                    db.commit()
+                    logger.info("Associated existing job_id=%s with project_id=%s", job_id, project_id)
+                else:
+                    logger.warning("Project id=%s not found, skipping association", project_id)
+
             logger.info("job_id=%s found in database cache", job_id)
             return UniversalGraph(
                 job_id=db_graph.job_id,
@@ -83,8 +99,18 @@ async def get_graph(job_id: str, db: Session = Depends(get_db)) -> UniversalGrap
 
         # Save to DB cache
         try:
+            # Validate project_id if supplied
+            actual_project_id = None
+            if project_id:
+                proj = db.query(Project).filter(Project.project_id == project_id).first()
+                if proj:
+                    actual_project_id = project_id
+                else:
+                    logger.warning("Project id=%s not found during initial persist", project_id)
+
             new_db_graph = SavedGraph(
                 job_id=graph.job_id,
+                project_id=actual_project_id,
                 model_name=graph.model_name,
                 framework=graph.meta.framework,
                 confidence=graph.meta.confidence,
