@@ -16,6 +16,8 @@ interface SidebarProps {
   onUploadClick: () => void;
   currentPage: string;
   onNavigate: (page: string) => void;
+  userEmail?: string | null;
+  onLogout?: () => void;
 }
 
 const NAV_ITEMS = [
@@ -29,7 +31,7 @@ const NAV_ITEMS = [
   { key: "help", label: "Help", enabled: true },
 ];
 
-export default function Sidebar({ onUploadClick, currentPage, onNavigate }: SidebarProps) {
+export default function Sidebar({ onUploadClick, currentPage, onNavigate, userEmail, onLogout }: SidebarProps) {
   return (
     <aside className="w-56 shrink-0 bg-panel border-r border-white/5 flex flex-col h-screen text-gray-300">
       <div className="px-5 py-6 flex items-center gap-2 text-white font-semibold text-lg">
@@ -66,14 +68,19 @@ export default function Sidebar({ onUploadClick, currentPage, onNavigate }: Side
       </nav>
 
       <div className="px-4 py-4 border-t border-white/5 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full bg-accent/30 flex items-center justify-center text-xs font-semibold text-white">
-          U
+        <div className="w-8 h-8 rounded-full bg-accent/30 flex items-center justify-center text-xs font-semibold text-white uppercase">
+          {userEmail ? userEmail.charAt(0) : "U"}
         </div>
-        <div className="text-xs">
-          <div className="text-white">Guest User</div>
-          <div className="text-gray-500">Phase 1 - no auth yet</div>
+        <div className="flex-1 min-w-0">
+          <div className="text-white text-xs truncate">{userEmail ?? "Guest User"}</div>
+          {onLogout && (
+            <button onClick={onLogout} className="text-gray-500 hover:text-red-400 text-xs transition">
+              Sign out
+            </button>
+          )}
         </div>
       </div>
     </aside>
   );
 }
+

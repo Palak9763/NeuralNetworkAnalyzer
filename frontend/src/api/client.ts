@@ -40,3 +40,27 @@ export async function fetchSource(jobId: string): Promise<SourceResponse> {
   const response = await axios.get<SourceResponse>(`${API_BASE}/api/v1/source/${jobId}`);
   return response.data;
 }
+
+/* ── Auth endpoints ─────────────────────────────────── */
+
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
+}
+
+export interface UserResponse {
+  user_id: string;
+  email: string;
+  is_active: boolean;
+}
+
+export async function loginUser(email: string, password: string): Promise<AuthResponse> {
+  const response = await axios.post<AuthResponse>(`${API_BASE}/api/v1/auth/login`, { email, password });
+  return response.data;
+}
+
+export async function registerUser(email: string, password: string): Promise<UserResponse> {
+  const response = await axios.post<UserResponse>(`${API_BASE}/api/v1/auth/register`, { email, password });
+  return response.data;
+}
+
