@@ -13,3 +13,5 @@ frontend/.env
 
 # OS
 .DS_Store
+  #node Module
+  node_modules/

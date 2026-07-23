@@ -14,6 +14,16 @@
 
 export type Framework = "pytorch" | "tensorflow" | "jax" | "unknown";
 export type Confidence = "traced" | "static" | "partial";
+export type GroupType = "conv_block" | "residual_block" | "stage";
+
+export interface GraphGroup {
+  id: string;
+  label: string;
+  type: GroupType;
+  member_node_ids: string[];
+  parent_group_id: string | null;
+  repeat_count: number;
+}
 
 export interface GraphNode {
   id: string;
@@ -46,6 +56,7 @@ export interface UniversalGraph {
   meta: GraphMeta;
   nodes: GraphNode[];
   edges: GraphEdge[];
+  groups: GraphGroup[];
 }
 
 export interface UploadResponse {
