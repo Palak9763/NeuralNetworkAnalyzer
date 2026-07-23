@@ -43,6 +43,8 @@ class RawNode:
     params: int = 0
     input_shape: list[int] | None = None
     output_shape: list[int] | None = None
+    flops: int = 0
+    line_number: int | None = None
 
 
 @dataclass
@@ -57,6 +59,7 @@ class RawParseResult:
     nodes: list[RawNode] = field(default_factory=list)
     edges: list[RawEdge] = field(default_factory=list)
     model_name: str = "UnknownModel"
+    total_flops: list[str] | int | None = None
     warnings: list[str] = field(default_factory=list)
 
 
@@ -151,6 +154,7 @@ def _extract_layer_definitions(init_method: ast.FunctionDef) -> dict[str, RawNod
             id=f"node_{counter}",
             type=layer_type,
             label=attr_name,
+            line_number=stmt.lineno,
         )
 
     return layers

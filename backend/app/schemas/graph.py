@@ -47,6 +47,8 @@ class GraphNode(BaseModel):
     input_shape: Optional[list[int]] = None
     output_shape: Optional[list[int]] = None
     params: int = 0
+    flops: Optional[int] = Field(default=None, description="FLOP count for this node/layer")
+    line_number: Optional[int] = Field(default=None, description="The line number where this layer is defined in the source file")
     group_id: Optional[str] = Field(
         default=None, description="Set by the grouping engine (Phase 3), null in Phase 1"
     )

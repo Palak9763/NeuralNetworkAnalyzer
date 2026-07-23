@@ -42,6 +42,8 @@ def build_universal_graph(
             input_shape=n.input_shape,
             output_shape=n.output_shape,
             params=n.params,
+            flops=n.flops,
+            line_number=n.line_number,
             group_id=None,  # populated by the grouping engine in Phase 3
         )
         for n in raw.nodes
@@ -59,7 +61,7 @@ def build_universal_graph(
         confidence=confidence,
         total_params=total_params,
         total_layers=len(nodes),
-        flops=None,  # populated in Phase 5
+        flops=raw.total_flops,
         warnings=raw.warnings,
     )
 
