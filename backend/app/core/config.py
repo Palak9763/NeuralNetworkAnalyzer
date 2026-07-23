@@ -20,9 +20,12 @@ from pathlib import Path
 from pydantic_settings import BaseSettings
 
 
+from typing import Optional
+
 class Settings(BaseSettings):
     app_name: str = "NeuralNetworkAnalyzer"
     api_prefix: str = "/api/v1"
+    database_url: Optional[str] = None
 
     # Storage
     storage_root: Path = Path(__file__).resolve().parent.parent.parent / "storage"

@@ -24,6 +24,7 @@ How it connects:
     service catches it and falls back to ast_parser.parse_with_ast().
 """
 
+import ast
 import importlib.util
 import logging
 import sys
@@ -31,9 +32,39 @@ import uuid
 from pathlib import Path
 
 from app.core.exceptions import ModelParsingError
-from app.engines.pytorch.ast_parser import RawEdge, RawNode, RawParseResult
+from app.engines.pytorch.ast_parser import RawEdge, RawNode, RawParseResult, _find_model_class
 
 logger = logging.getLogger(__name__)
+
+
+def _extract_line_numbers(file_path: Path) -> dict[str, int]:
+    """Statically inspect the file's AST to map submodule attribute names
+    to the line numbers where they are declared in __init__."""
+    try:
+        source = file_path.read_text(errors="ignore")
+        tree = ast.parse(source)
+        model_class = _find_model_class(tree)
+        if not model_class:
+            return {}
+        init_method = next(
+            (n for n in model_class.body if isinstance(n, ast.FunctionDef) and n.name == "__init__"),
+            None,
+        )
+        if not init_method:
+            return {}
+        line_map = {}
+        for stmt in ast.walk(init_method):
+            if not isinstance(stmt, ast.Assign):
+                continue
+            target = stmt.targets[0]
+            if (isinstance(target, ast.Attribute) and 
+                isinstance(target.value, ast.Name) and 
+                target.value.id == "self"):
+                line_map[target.attr] = stmt.lineno
+        return line_map
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Could not extract line numbers from AST: %s", exc)
+        return {}
 
 DEFAULT_DUMMY_INPUT_SHAPE = (1, 3, 224, 224)
 
@@ -95,6 +126,7 @@ def run_torch_fx(file_path: Path) -> RawParseResult:
     Raises ModelParsingError for any failure, which the caller should
     catch and fall back to AST parsing.
     """
+    line_map = _extract_line_numbers(file_path)
     try:
         import torch
         import torch.fx as fx
@@ -141,6 +173,18 @@ def run_torch_fx(file_path: Path) -> RawParseResult:
     finally:
         for h in hooks:
             h.remove()
+
+    total_flops = None
+    flops_by_module = {}
+    flop_warnings = []
+    try:
+        from fvcore.nn import FlopCountAnalysis
+        flop_analyzer = FlopCountAnalysis(model, (dummy_input,))
+        total_flops = int(flop_analyzer.total())
+        flops_by_module = {k: int(v) for k, v in flop_analyzer.by_module().items()}
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("fvcore FLOP analysis failed: %s", exc)
+        flop_warnings.append(f"FLOP profiling failed: {exc}")
 
     nodes: list[RawNode] = []
     edges: list[RawEdge] = []
@@ -195,6 +239,8 @@ def run_torch_fx(file_path: Path) -> RawParseResult:
             params=param_counts.get(fx_node.target, 0),
             input_shape=in_shape,
             output_shape=out_shape,
+            flops=flops_by_module.get(fx_node.target, 0),
+            line_number=line_map.get(fx_node.target),
         ))
 
         # Resolve predecessors through any intermediate non-module ops
@@ -239,4 +285,10 @@ def run_torch_fx(file_path: Path) -> RawParseResult:
 
     logger.info("torch.fx parse of %s (%s) found %d nodes, %d edges", file_path, model_name, len(nodes), len(edges))
 
-    return RawParseResult(nodes=nodes, edges=edges, model_name=model_name, warnings=[])
+    return RawParseResult(
+        nodes=nodes,
+        edges=edges,
+        model_name=model_name,
+        total_flops=total_flops,
+        warnings=flop_warnings,
+    )

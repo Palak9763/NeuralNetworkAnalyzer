@@ -11,19 +11,31 @@ preview panel.
 """
 
 import logging
-
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Depends, status
+from sqlalchemy.orm import Session
 
 from app.core.exceptions import ModelParsingError
 from app.schemas.graph import SourceResponse
 from app.services.upload_service import resolve_candidate_model_file
+from app.db.session import get_db
+from app.models.graph import SavedGraph
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1", tags=["source"])
 
 
 @router.get("/source/{job_id}", response_model=SourceResponse, status_code=status.HTTP_200_OK)
-async def get_source(job_id: str) -> SourceResponse:
+async def get_source(job_id: str, db: Session = Depends(get_db)) -> SourceResponse:
+    # 1. Query the database first
+    try:
+        db_graph = db.query(SavedGraph).filter(SavedGraph.job_id == job_id).first()
+        if db_graph and db_graph.code:
+            logger.info("job_id=%s source found in database cache", job_id)
+            return SourceResponse(job_id=job_id, filename=db_graph.filename, code=db_graph.code)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Database query failed for source job_id=%s: %s", job_id, exc)
+
+    # 2. Resolve on disk if not found in DB
     try:
         source_file = resolve_candidate_model_file(job_id)
     except ModelParsingError as exc:

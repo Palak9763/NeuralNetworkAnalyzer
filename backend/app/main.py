@@ -21,6 +21,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import graph, health, source, upload, uploads
 from app.core.config import settings
+from app.db.session import Base, engine
+from app.models.graph import SavedGraph
+
+# Create database tables automatically
+Base.metadata.create_all(bind=engine)
 
 logging.basicConfig(
     level=logging.INFO,

@@ -8,3 +8,5 @@ numpy>=1.26
 Pillow>=10.0
 transformers>=4.40
 fvcore
+sqlalchemy
+psycopg2-binary
