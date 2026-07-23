@@ -11,7 +11,8 @@ frontend/node_modules/
 frontend/dist/
 frontend/.env
 
+# Root node_modules
+node_modules/
+
 # OS
 .DS_Store
-  #node Module
-  node_modules/
