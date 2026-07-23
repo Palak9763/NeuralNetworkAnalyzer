@@ -15,6 +15,8 @@
 import { useState, useEffect } from "react";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./components/Dashboard";
+import SettingsPage from "./components/SettingsPage";
+import HelpPage from "./components/HelpPage";
 import TopBar from "./components/TopBar";
 import GraphCanvas from "./components/GraphCanvas";
 import LayerPropertiesPanel from "./components/LayerPropertiesPanel";
@@ -75,6 +77,10 @@ export default function App() {
                     Upload a PyTorch project to see its architecture diagram here.
                   </div>
                 )
+              ) : page === "settings" ? (
+                <SettingsPage />
+              ) : page === "help" ? (
+                <HelpPage />
               ) : (
                 <div className="h-full flex items-center justify-center text-gray-600 text-sm">Page not implemented</div>
               )}

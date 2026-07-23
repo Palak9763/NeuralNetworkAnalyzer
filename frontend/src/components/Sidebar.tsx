@@ -25,8 +25,8 @@ const NAV_ITEMS = [
   { label: "Saved Graphs", enabled: false },
   { label: "History", enabled: false },
   { label: "Examples", enabled: false },
-  { label: "Settings", enabled: false },
-  { label: "Help", enabled: false },
+  { key: "settings", label: "Settings", enabled: true },
+  { key: "help", label: "Help", enabled: true },
 ];
 
 export default function Sidebar({ onUploadClick, currentPage, onNavigate }: SidebarProps) {
