@@ -2,7 +2,157 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Dark theme (default) ─────────────── */
+:root,
+.dark {
+  --color-panel: #12141c;
+  --color-panel-light: #1a1d29;
+  --color-surface: #0d0e14;
+  --color-bg: #0d0e14;
+  --color-text: #ffffff;
+  --color-text-secondary: #9ca3af;
+  --color-text-muted: #6b7280;
+  --color-border: rgba(255, 255, 255, 0.05);
+  --color-card-bg: #0a0c12;
+  --color-input-bg: #0a0c12;
+}
+
+/* ── Light theme ──────────────────────── */
+.light {
+  --color-panel: #f5f3ff;
+  --color-panel-light: #ede9fe;
+  --color-surface: #faf9ff;
+  --color-bg: #f8f7ff;
+  --color-text: #1e1b4b;
+  --color-text-secondary: #4b5563;
+  --color-text-muted: #6b7280;
+  --color-border: rgba(0, 0, 0, 0.08);
+  --color-card-bg: #ffffff;
+  --color-input-bg: #ffffff;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* ── Theme-aware utility overrides ──── */
+
+/* Main background */
+.theme-bg {
+  background: var(--color-bg);
+}
+
+/* Text colors */
+.light .text-white {
+  color: var(--color-text) !important;
+}
+.light .text-gray-200,
+.light .text-gray-300 {
+  color: #374151 !important;
+}
+.light .text-gray-400 {
+  color: #6b7280 !important;
+}
+.light .text-gray-500 {
+  color: #9ca3af !important;
+}
+.light .text-gray-600 {
+  color: #6b7280 !important;
+}
+
+/* Panel/card backgrounds */
+.light .bg-panel {
+  background: var(--color-panel) !important;
+}
+.light .bg-\[#12141c\] {
+  background: var(--color-panel) !important;
+}
+.light .bg-\[#0d0e14\] {
+  background: var(--color-bg) !important;
+}
+.light .bg-\[#0a0c12\] {
+  background: var(--color-card-bg) !important;
+}
+.light .bg-\[#0f1320\] {
+  background: #f0edff !important;
+}
+.light .bg-\[#090b11\] {
+  background: #f0edff !important;
+}
+
+/* Borders */
+.light .border-white\/5,
+.light .border-white\/10 {
+  border-color: var(--color-border) !important;
+}
+
+/* Hover states */
+.light .hover\:bg-white\/5:hover {
+  background: rgba(124, 92, 255, 0.06) !important;
+}
+.light .hover\:bg-white\/\[0\.02\]:hover {
+  background: rgba(124, 92, 255, 0.04) !important;
+}
+
+/* Scrollbar */
+.light ::-webkit-scrollbar {
+  width: 8px;
+}
+.light ::-webkit-scrollbar-track {
+  background: var(--color-panel);
+}
+.light ::-webkit-scrollbar-thumb {
+  background: #c4b5fd;
+  border-radius: 4px;
+}
+
+/* SVG text fill */
+.light .fill-white {
+  fill: var(--color-text) !important;
+}
+.light .fill-gray-400 {
+  fill: #6b7280 !important;
+}
+
+/* ReactFlow overrides for light mode */
+.light .react-flow__background {
+  background: var(--color-bg) !important;
+}
+.light .react-flow__controls button {
+  background: var(--color-panel) !important;
+  color: var(--color-text) !important;
+  border-color: var(--color-border) !important;
+}
+.light .react-flow__controls button:hover {
+  background: #ede9fe !important;
+}
+.light .react-flow__controls button svg {
+  fill: var(--color-text) !important;
+}
+.light .react-flow__minimap {
+  background: var(--color-panel) !important;
+}
+
+/* kbd tag styling */
+.light kbd {
+  background: #f0edff !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  color: #1e1b4b !important;
+}
+
+/* Input/select light mode */
+.light input,
+.light select {
+  background: var(--color-input-bg) !important;
+  color: var(--color-text) !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Dashed border */
+.light .border-dashed {
+  border-color: rgba(124, 92, 255, 0.3) !important;
 }

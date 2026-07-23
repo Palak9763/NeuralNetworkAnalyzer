@@ -19,7 +19,8 @@ import SettingsPage from "./components/SettingsPage";
 import HelpPage from "./components/HelpPage";
 import TopBar from "./components/TopBar";
 import GraphCanvas from "./components/GraphCanvas";
-import LayerPropertiesPanel from "./components/LayerPropertiesPanel";
+import ThemeToggle from "./components/ThemeToggle";
+
 import ModelSummary from "./components/ModelSummary";
 import LayerTable from "./components/LayerTable";
 import UploadModal from "./components/UploadModal";
@@ -49,7 +50,7 @@ export default function App() {
   }, []);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#0d0e14]">
+    <div className="flex h-screen w-screen overflow-hidden" style={{ background: 'var(--color-bg)' }}>
       <Sidebar onUploadClick={() => setShowUpload(true)} currentPage={page} onNavigate={setPage} />
 
       <div className="flex-1 flex flex-col min-w-0">
@@ -94,7 +95,7 @@ export default function App() {
             )}
           </main>
 
-          <LayerPropertiesPanel node={selectedNode} />
+
         </div>
       </div>
 
@@ -107,6 +108,7 @@ export default function App() {
           }}
         />
       )}
+      <ThemeToggle />
     </div>
   );
 }

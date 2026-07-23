@@ -36,15 +36,6 @@ const FAQ_ITEMS = [
   },
 ];
 
-const SHORTCUTS = [
-  { keys: ["Scroll"], action: "Zoom in / out on the graph canvas" },
-  { keys: ["Click + Drag"], action: "Pan around the graph" },
-  { keys: ["Click Node"], action: "View layer properties in the side panel" },
-  { keys: ["+"], action: "Zoom in" },
-  { keys: ["-"], action: "Zoom out" },
-  { keys: ["⌗"], action: "Fit graph to screen" },
-];
-
 export default function HelpPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
@@ -55,28 +46,7 @@ export default function HelpPage() {
         <p className="text-gray-400 text-sm mt-1">Learn how to use the Neural Network Analyzer effectively.</p>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        {/* Getting Started */}
-        <div className="bg-panel rounded-xl p-5 border border-white/5 lg:col-span-2">
-          <SectionHeader icon="🚀" title="Getting Started" />
-          <div className="grid sm:grid-cols-3 gap-4">
-            {[
-              { step: "1", title: "Upload Model", desc: "Click '+ Upload Project' and select your PyTorch model file (.py or .pt).", icon: "📁" },
-              { step: "2", title: "Visualize", desc: "The architecture graph is automatically generated. Explore layers by clicking nodes.", icon: "🔬" },
-              { step: "3", title: "Analyze", desc: "Switch to Dashboard for detailed stats, architecture type, and layer breakdown.", icon: "📊" },
-            ].map((s) => (
-              <div key={s.step} className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-xl p-4 border border-accent/10">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold text-sm">{s.step}</span>
-                  <span className="text-lg">{s.icon}</span>
-                </div>
-                <h4 className="text-white font-semibold text-sm mb-1">{s.title}</h4>
-                <p className="text-gray-400 text-xs leading-relaxed">{s.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
+      <div className="grid gap-5">
         {/* FAQ */}
         <div className="bg-panel rounded-xl p-5 border border-white/5">
           <SectionHeader icon="❓" title="Frequently Asked Questions" />
@@ -98,44 +68,8 @@ export default function HelpPage() {
           </div>
         </div>
 
-        {/* Keyboard Shortcuts */}
-        <div className="bg-panel rounded-xl p-5 border border-white/5">
-          <SectionHeader icon="⌨️" title="Controls & Shortcuts" />
-          <div className="space-y-2">
-            {SHORTCUTS.map((s, i) => (
-              <div key={i} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
-                <span className="text-gray-400 text-sm">{s.action}</span>
-                <div className="flex gap-1">
-                  {s.keys.map((k) => (
-                    <kbd key={k} className="px-2 py-0.5 bg-[#0a0c12] border border-white/10 rounded text-xs text-gray-300 font-mono">{k}</kbd>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-5 pt-4 border-t border-white/5">
-            <SectionHeader icon="🎨" title="Layer Color Legend" />
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { label: "Convolution", color: "#4285f4" },
-                { label: "Normalization", color: "#fbbc04" },
-                { label: "Activation", color: "#34a853" },
-                { label: "Pooling", color: "#a855f7" },
-                { label: "Fully Connected", color: "#ea4335" },
-                { label: "Other", color: "#94a3b8" },
-              ].map((c) => (
-                <div key={c.label} className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-sm shrink-0" style={{ background: c.color }} />
-                  <span className="text-gray-300 text-sm">{c.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
         {/* Contact / Support */}
-        <div className="bg-panel rounded-xl p-5 border border-white/5 lg:col-span-2">
+        <div className="bg-panel rounded-xl p-5 border border-white/5">
           <SectionHeader icon="💬" title="Need More Help?" />
           <div className="grid sm:grid-cols-3 gap-4">
             {[
