@@ -64,3 +64,9 @@ export interface UploadResponse {
   filename: string;
   status: string;
 }
+
+export interface SourceResponse {
+  job_id: string;
+  filename: string;
+  code: string;
+}

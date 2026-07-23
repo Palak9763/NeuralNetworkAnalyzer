@@ -109,6 +109,12 @@ class UploadResponse(BaseModel):
     status: str = "uploaded"
 
 
+class SourceResponse(BaseModel):
+    job_id: str
+    filename: str
+    code: str
+
+
 class JobStatusResponse(BaseModel):
     job_id: str
     status: str  # uploaded | detecting | parsing | done | failed

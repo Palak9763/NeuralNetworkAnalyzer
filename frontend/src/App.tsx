@@ -58,6 +58,7 @@ export default function App() {
             <div className="flex-1 min-h-0">
               {page === "dashboard" ? (
                 <Dashboard
+                  graph={graph}
                   onLoadGraph={(g: UniversalGraph) => {
                     setGraph(g);
                     setSelectedNode(null);
@@ -66,7 +67,9 @@ export default function App() {
                 />
               ) : page === "visualizer" ? (
                 graph ? (
-                  <GraphCanvas graph={graph} onNodeClick={setSelectedNode} />
+                  <div id="reactflow-wrapper" className="h-full min-h-0">
+                    <GraphCanvas graph={graph} onNodeClick={setSelectedNode} />
+                  </div>
                 ) : (
                   <div className="h-full flex items-center justify-center text-gray-600 text-sm">
                     Upload a PyTorch project to see its architecture diagram here.

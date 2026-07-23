@@ -12,7 +12,7 @@
  */
 
 import axios from "axios";
-import type { UniversalGraph, UploadResponse } from "../types/graph";
+import type { SourceResponse, UniversalGraph, UploadResponse } from "../types/graph";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
@@ -33,5 +33,10 @@ export async function fetchGraph(jobId: string): Promise<UniversalGraph> {
 
 export async function fetchUploads(): Promise<Array<{job_id: string; filename: string; uploaded_at: string;}>> {
   const response = await axios.get(`${API_BASE}/api/v1/uploads`);
+  return response.data;
+}
+
+export async function fetchSource(jobId: string): Promise<SourceResponse> {
+  const response = await axios.get<SourceResponse>(`${API_BASE}/api/v1/source/${jobId}`);
   return response.data;
 }

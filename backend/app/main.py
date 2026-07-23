@@ -19,7 +19,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import graph, health, upload, uploads
+from app.api.routes import graph, health, source, upload, uploads
 from app.core.config import settings
 
 logging.basicConfig(
@@ -43,6 +43,7 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(upload.router)
 app.include_router(graph.router)
+app.include_router(source.router)
 app.include_router(uploads.router)
 
 @app.get("/")

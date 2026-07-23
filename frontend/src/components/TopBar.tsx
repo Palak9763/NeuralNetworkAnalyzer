@@ -59,69 +59,48 @@ export default function TopBar({ graph }: TopBarProps) {
   const handleExport = async () => {
     if (!graph) return;
     const wrapper = document.getElementById("reactflow-wrapper");
-    if (wrapper) {
-      // try to find the internal renderer element used by React Flow
-      const renderer =
-        (wrapper.querySelector(".reactflow__renderer") as HTMLElement) ||
-        (wrapper.querySelector(".react-flow__renderer") as HTMLElement) ||
-        (wrapper.querySelector(".reactflow") as HTMLElement) ||
-        wrapper;
-
-      // compute full size to capture
-      const width = Math.max(
-        renderer.scrollWidth,
-        renderer.getBoundingClientRect().width
-      );
-      const height = Math.max(
-        renderer.scrollHeight,
-        renderer.getBoundingClientRect().height
-      );
-
-      // save original styles
-      const origWidth = wrapper.style.width;
-      const origHeight = wrapper.style.height;
-      const origOverflow = wrapper.style.overflow;
-
-      try {
-        // temporarily expand wrapper to full content size so html-to-image can capture everything
-        wrapper.style.width = `${width}px`;
-        wrapper.style.height = `${height}px`;
-        wrapper.style.overflow = "visible";
-
-        const htmlToImage = await import("html-to-image");
-        const dataUrl = await htmlToImage.toPng(wrapper as HTMLElement, {
-          width,
-          height,
-          backgroundColor: "#0b0f17",
-        });
-        const link = document.createElement("a");
-        link.href = dataUrl;
-        link.download = `${graph.model_name || "graph"}-graph.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        return;
-      } catch (e) {
-        // fall back to JSON export below
-      } finally {
-        // restore original styles
-        wrapper.style.width = origWidth;
-        wrapper.style.height = origHeight;
-        wrapper.style.overflow = origOverflow;
-      }
+    if (!wrapper) {
+      alert("Unable to find graph area for export.");
+      return;
     }
 
-    // Fallback: export JSON
-    const dataStr = JSON.stringify(graph, null, 2);
-    const dataBlob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${graph.model_name || "graph"}-export.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    const rect = wrapper.getBoundingClientRect();
+    const width = Math.max(wrapper.scrollWidth, rect.width);
+    const height = Math.max(wrapper.scrollHeight, rect.height);
+    const origWidth = wrapper.style.width;
+    const origHeight = wrapper.style.height;
+    const origOverflow = wrapper.style.overflow;
+
+    try {
+      wrapper.style.width = `${width}px`;
+      wrapper.style.height = `${height}px`;
+      wrapper.style.overflow = "visible";
+
+      const htmlToImage = await import("html-to-image");
+      const dataUrl = await htmlToImage.toPng(wrapper as HTMLElement, {
+        width,
+        height,
+        backgroundColor: "#0b0f17",
+        pixelRatio: window.devicePixelRatio || 2,
+        cacheBust: true,
+      });
+
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = `${graph.model_name || "graph"}-graph.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return;
+    } catch (e) {
+      console.error("Graph export failed:", e);
+      alert("Export failed. Please try again or use Download to save JSON.");
+      return;
+    } finally {
+      wrapper.style.width = origWidth;
+      wrapper.style.height = origHeight;
+      wrapper.style.overflow = origOverflow;
+    }
   };
 
   return (
