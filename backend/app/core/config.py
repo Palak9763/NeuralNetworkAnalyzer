@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 24 * 7
 
+    # Google OAuth
+    google_client_id: str = ""
+    google_client_secret: str = ""
+
     # Storage
     storage_root: Path = Path(__file__).resolve().parent.parent.parent / "storage"
     upload_dir_name: str = "uploads"
