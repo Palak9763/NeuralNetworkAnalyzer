@@ -17,6 +17,7 @@ class UserResponse(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    email: Optional[str] = None
 
 class TokenPayload(BaseModel):
     sub: Optional[str] = None
@@ -27,4 +28,13 @@ class GoogleAuthRequest(BaseModel):
     redirect_uri: str = Field(
         default="postmessage",
         description="Redirect URI used in the OAuth flow (use 'postmessage' for popup)"
+    )
+
+
+class GitHubAuthRequest(BaseModel):
+    """Request body for GitHub OAuth sign-in."""
+    code: str = Field(..., description="Authorization code from GitHub OAuth")
+    redirect_uri: str = Field(
+        ...,
+        description="Redirect URI used in the OAuth flow (must match the authorize request)"
     )

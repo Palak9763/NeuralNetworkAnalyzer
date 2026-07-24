@@ -14,8 +14,9 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     # OAuth fields
-    auth_provider = Column(String, default="local")  # "local" or "google"
+    auth_provider = Column(String, default="local")  # "local", "google", or "github"
     google_id = Column(String, unique=True, nullable=True, index=True)
+    github_id = Column(String, unique=True, nullable=True, index=True)
 
     # Relationship to Project ORM model
     projects = relationship("Project", back_populates="owner", cascade="all, delete-orphan")

@@ -16,6 +16,26 @@ import type { SourceResponse, UniversalGraph, UploadResponse } from "../types/gr
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
+axios.interceptors.request.use((config) => {
+  const token = localStorage.getItem("nna-token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401 && localStorage.getItem("nna-token")) {
+      localStorage.removeItem("nna-token");
+      localStorage.removeItem("nna-email");
+      window.location.reload();
+    }
+    return Promise.reject(error);
+  }
+);
+
 export async function uploadProject(file: File): Promise<UploadResponse> {
   const formData = new FormData();
   formData.append("file", file);
@@ -46,6 +66,7 @@ export async function fetchSource(jobId: string): Promise<SourceResponse> {
 export interface AuthResponse {
   access_token: string;
   token_type: string;
+  email?: string;
 }
 
 export interface UserResponse {
@@ -66,6 +87,14 @@ export async function registerUser(email: string, password: string): Promise<Use
 
 export async function googleLogin(code: string, redirectUri: string = "postmessage"): Promise<AuthResponse> {
   const response = await axios.post<AuthResponse>(`${API_BASE}/api/v1/auth/google`, {
+    code,
+    redirect_uri: redirectUri,
+  });
+  return response.data;
+}
+
+export async function githubLogin(code: string, redirectUri: string): Promise<AuthResponse> {
+  const response = await axios.post<AuthResponse>(`${API_BASE}/api/v1/auth/github`, {
     code,
     redirect_uri: redirectUri,
   });

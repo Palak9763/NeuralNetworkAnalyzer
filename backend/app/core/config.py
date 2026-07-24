@@ -36,6 +36,10 @@ class Settings(BaseSettings):
     google_client_id: str = ""
     google_client_secret: str = ""
 
+    # GitHub OAuth
+    github_client_id: str = ""
+    github_client_secret: str = ""
+
     # Storage
     storage_root: Path = Path(__file__).resolve().parent.parent.parent / "storage"
     upload_dir_name: str = "uploads"

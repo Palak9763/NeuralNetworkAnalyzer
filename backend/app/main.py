@@ -52,6 +52,9 @@ if "users" in inspector.get_table_names():
     if "google_id" not in columns:
         with engine.begin() as conn:
             conn.execute(text("ALTER TABLE users ADD COLUMN google_id VARCHAR;"))
+    if "github_id" not in columns:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN github_id VARCHAR;"))
     if "hashed_password" in columns:
         # Ensure hashed_password is nullable for Google OAuth users
         # SQLite doesn't support ALTER COLUMN, but the column is already created as nullable
