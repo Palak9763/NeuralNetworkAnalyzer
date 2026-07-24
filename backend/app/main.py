@@ -44,6 +44,20 @@ if "projects" in inspector.get_table_names():
         with engine.begin() as conn:
             conn.execute(text("ALTER TABLE projects ADD COLUMN owner_id VARCHAR;"))
 
+if "users" in inspector.get_table_names():
+    columns = [col["name"] for col in inspector.get_columns("users")]
+    if "auth_provider" not in columns:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN auth_provider VARCHAR DEFAULT 'local';"))
+    if "google_id" not in columns:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN google_id VARCHAR;"))
+    if "hashed_password" in columns:
+        # Ensure hashed_password is nullable for Google OAuth users
+        # SQLite doesn't support ALTER COLUMN, but the column is already created as nullable
+        # in PostgreSQL we can alter if needed
+        pass
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",

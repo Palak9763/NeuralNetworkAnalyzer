@@ -64,3 +64,11 @@ export async function registerUser(email: string, password: string): Promise<Use
   return response.data;
 }
 
+export async function googleLogin(code: string, redirectUri: string = "postmessage"): Promise<AuthResponse> {
+  const response = await axios.post<AuthResponse>(`${API_BASE}/api/v1/auth/google`, {
+    code,
+    redirect_uri: redirectUri,
+  });
+  return response.data;
+}
+

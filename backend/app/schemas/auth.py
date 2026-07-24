@@ -9,6 +9,7 @@ class UserResponse(BaseModel):
     user_id: str
     email: str
     is_active: bool
+    auth_provider: str = "local"
 
     class Config:
         from_attributes = True
@@ -19,3 +20,11 @@ class Token(BaseModel):
 
 class TokenPayload(BaseModel):
     sub: Optional[str] = None
+
+class GoogleAuthRequest(BaseModel):
+    """Request body for Google OAuth sign-in."""
+    code: str = Field(..., description="Authorization code from Google OAuth")
+    redirect_uri: str = Field(
+        default="postmessage",
+        description="Redirect URI used in the OAuth flow (use 'postmessage' for popup)"
+    )
