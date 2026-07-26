@@ -153,7 +153,13 @@ def _shape_to_int_list(shape):
 
 
 def _collect_leaf_layers(layer, seen=None):
-    """Recursively collect leaf layers, descending into nested models/layers."""
+    """Recursively collect leaf layers, descending into nested models/layers.
+
+    In Keras 3, tf.keras.Model subclasses expose .layers (a public list),
+    but plain tf.keras.layers.Layer subclasses (e.g. a custom ResBlock defined
+    as `class ResBlock(layers.Layer)`) only expose ._layers (a private list).
+    We must check both to recurse into any nested composite layer.
+    """
     if seen is None:
         seen = set()
 
@@ -161,13 +167,32 @@ def _collect_leaf_layers(layer, seen=None):
         return []
     seen.add(id(layer))
 
-    if hasattr(layer, "layers") and layer.layers:
+    # --- Try .layers first (tf.keras.Model subclasses) ---
+    children = getattr(layer, "layers", None)
+    if children:
         leaves = []
-        for sub_layer in layer.layers:
+        for sub_layer in children:
             leaves.extend(_collect_leaf_layers(sub_layer, seen))
         return leaves
-    else:
-        return [layer]
+
+    # --- Fall back to ._layers (tf.keras.layers.Layer subclasses in Keras 3) ---
+    # ._layers may contain weights/variables as well as sublayers; filter to
+    # objects that have a `call` method (i.e. are actual Keras layers).
+    private_children = getattr(layer, "_layers", None)
+    if private_children:
+        # Only descend if there are real sub-layers (not just weights etc.)
+        real_sub_layers = [
+            c for c in private_children
+            if hasattr(c, "call") and c is not layer
+        ]
+        if real_sub_layers:
+            leaves = []
+            for sub_layer in real_sub_layers:
+                leaves.extend(_collect_leaf_layers(sub_layer, seen))
+            return leaves
+
+    # This layer has no children - it is a leaf
+    return [layer]
 
 
 def _parse_functional_model(model) -> RawParseResult:
