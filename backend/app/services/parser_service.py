@@ -44,11 +44,12 @@ from app.engines.graph.universal_graph import build_universal_graph
 from app.engines.pytorch.ast_parser import parse_with_ast
 from app.engines.pytorch.fx_parser import run_torch_fx
 from app.engines.pytorch.pretrained_parser import has_pretrained_call, run_pretrained_loader
+from app.engines.tensorflow.keras_parser import run_keras_parser
 from app.schemas.graph import Confidence, Framework, UniversalGraph
 
 logger = logging.getLogger(__name__)
 
-_SUPPORTED_IN_PHASE_1 = (Framework.PYTORCH,)
+_SUPPORTED_FRAMEWORKS = (Framework.PYTORCH, Framework.TENSORFLOW)
 
 
 def _parse_pytorch_file(job_id: str, model_file: Path):
@@ -106,23 +107,33 @@ def _parse_pytorch_file(job_id: str, model_file: Path):
 
 def parse_project(job_id: str, model_file: Path) -> UniversalGraph:
     """
-    Run the full Phase 1 parsing chain on a candidate model file and
+    Run the full parsing chain on a candidate model file and
     return the resulting UniversalGraph.
 
     Raises:
         FrameworkNotSupportedError: framework detected but not implemented yet
-        ModelParsingError: framework is PyTorch but every available tier failed
+        ModelParsingError: every available tier for the framework failed
     """
     framework = detect_framework(model_file)
 
-    if framework not in _SUPPORTED_IN_PHASE_1:
+    if framework not in _SUPPORTED_FRAMEWORKS:
         readable = framework.value if framework != Framework.UNKNOWN else "an unrecognized framework"
         raise FrameworkNotSupportedError(
             f"Detected {readable} in '{model_file.name}'. "
-            f"Phase 1 currently supports PyTorch only - support for other "
-            f"frameworks is planned for a later phase."
+            f"Support for this framework is planned for a later phase."
         )
 
-    raw, confidence = _parse_pytorch_file(job_id, model_file)
+    if framework == Framework.TENSORFLOW:
+        try:
+            raw = run_keras_parser(model_file)
+            logger.info("job_id=%s parsed via Keras parser", job_id)
+            confidence = Confidence.TRACED
+        except ModelParsingError as keras_error:
+            logger.error("job_id=%s Keras parsing failed: %s", job_id, keras_error)
+            raise ModelParsingError(f"Could not parse model. Keras error: {keras_error}") from keras_error
+    else:
+        # PyTorch
+        raw, confidence = _parse_pytorch_file(job_id, model_file)
+
     graph = build_universal_graph(job_id=job_id, raw=raw, framework=framework, confidence=confidence)
     return build_groups(graph)

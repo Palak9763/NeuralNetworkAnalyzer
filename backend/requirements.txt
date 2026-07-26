@@ -13,4 +13,6 @@ psycopg2-binary
 pyjwt
 passlib[bcrypt]
 bcrypt
-httpx
+httpx
+tensorflow-cpu>=2.16
+
