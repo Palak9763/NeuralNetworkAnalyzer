@@ -1,6 +1,6 @@
 
 # NeuralNetworkAnalyzer
-<<<<<<< HEAD
+
 
 Upload a PyTorch model → get an interactive, auto-generated architecture
 diagram (React Flow), with real layer shapes, parameter counts, and a
