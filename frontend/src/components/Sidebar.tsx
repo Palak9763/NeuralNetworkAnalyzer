@@ -23,10 +23,8 @@ interface SidebarProps {
 const NAV_ITEMS = [
   { key: "dashboard", label: "Dashboard", enabled: true },
   { key: "visualizer", label: "Visualizer", enabled: true },
-  { label: "Projects", enabled: false },
-  { label: "Saved Graphs", enabled: false },
-  { label: "History", enabled: false },
-  { label: "Examples", enabled: false },
+  { key: "history", label: "History", enabled: true },
+  { key: "examples", label: "Examples", enabled: true },
   { key: "settings", label: "Settings", enabled: true },
   { key: "help", label: "Help", enabled: true },
 ];

@@ -17,6 +17,8 @@ import Sidebar from "./components/Sidebar";
 import Dashboard from "./components/Dashboard";
 import SettingsPage from "./components/SettingsPage";
 import HelpPage from "./components/HelpPage";
+import HistoryPage from "./components/HistoryPage";
+import ExamplesPage from "./components/ExamplesPage";
 import TopBar from "./components/TopBar";
 import GraphCanvas from "./components/GraphCanvas";
 import ThemeToggle from "./components/ThemeToggle";
@@ -109,6 +111,17 @@ export default function App() {
                 )
               ) : page === "settings" ? (
                 <SettingsPage />
+              ) : page === "history" ? (
+                <HistoryPage
+                  currentGraph={graph}
+                  onLoadGraph={(g: UniversalGraph) => {
+                    setGraph(g);
+                    setSelectedNode(null);
+                    setPage("visualizer");
+                  }}
+                />
+              ) : page === "examples" ? (
+                <ExamplesPage />
               ) : page === "help" ? (
                 <HelpPage />
               ) : (

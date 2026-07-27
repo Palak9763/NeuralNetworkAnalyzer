@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchSource, fetchUploads, fetchGraph } from "../api/client";
+import { fetchSource, fetchGraph } from "../api/client";
 import type { SourceResponse, UniversalGraph, GraphNode } from "../types/graph";
 
 interface UploadItem {
@@ -137,8 +137,6 @@ export default function Dashboard({
   onLoadGraph: (g: UniversalGraph) => void;
 }) {
   const [graph, setGraph] = useState<UniversalGraph | null>(externalGraph);
-  const [uploads, setUploads] = useState<UploadItem[]>([]);
-  const [loading, setLoading] = useState(false);
   const [source, setSource] = useState<SourceResponse | null>(null);
   const [sourceLoading, setSourceLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
@@ -146,23 +144,10 @@ export default function Dashboard({
   useEffect(() => { setGraph(externalGraph); }, [externalGraph]);
 
   useEffect(() => {
-    setLoading(true);
-    fetchUploads().then(setUploads).catch(() => setUploads([])).finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
     if (!graph) { setSource(null); return; }
     setSourceLoading(true);
     fetchSource(graph.job_id).then(setSource).catch(() => setSource(null)).finally(() => setSourceLoading(false));
   }, [graph]);
-
-  const handleLoad = async (jobId: string) => {
-    try {
-      const g = await fetchGraph(jobId);
-      setGraph(g);
-      onLoadGraph(g);
-    } catch { alert("Failed to load graph for job " + jobId); }
-  };
 
   /* ── derived values ── */
   const archType = graph ? deriveArchitectureType(graph) : "—";
@@ -172,9 +157,7 @@ export default function Dashboard({
   const outputClasses = graph
     ? graph.nodes.slice().reverse().find((n) => n.output_shape)?.output_shape?.[0] ?? "—"
     : "—";
-  const sourceFilename = graph
-    ? uploads.find((u) => u.job_id === graph.job_id)?.filename ?? graph.model_name
-    : "—";
+  const sourceFilename = graph ? graph.model_name : "—";
 
   const layerCounts = graph
     ? (Object.keys(CATEGORY_COLORS) as LayerCategory[]).map((cat) => ({
@@ -211,23 +194,7 @@ export default function Dashboard({
         <div className="bg-panel rounded-2xl p-10 text-center max-w-lg border border-white/5">
           <div className="text-5xl mb-4">🧠</div>
           <h3 className="text-white text-xl font-semibold mb-2">No model loaded yet</h3>
-          <p className="text-gray-400 mb-6">Upload a model or select a recent project to see the analysis report.</p>
-          {loading && <p className="text-gray-500 text-sm">Loading recent uploads…</p>}
-          {!loading && uploads.length > 0 && (
-            <div className="space-y-2 text-left">
-              <p className="text-xs uppercase tracking-widest text-gray-500 mb-2">Recent Uploads</p>
-              {uploads.slice(0, 5).map((u) => (
-                <button key={u.job_id} onClick={() => handleLoad(u.job_id)}
-                  className="w-full flex items-center justify-between p-3 rounded-xl bg-[#0f1320] border border-white/5 hover:border-accent/50 transition group">
-                  <div>
-                    <div className="text-sm text-white">{u.filename || "(no filename)"}</div>
-                    <div className="text-xs text-gray-500">{new Date(u.uploaded_at).toLocaleString()}</div>
-                  </div>
-                  <span className="text-xs px-3 py-1 rounded-full bg-accent/20 text-accent group-hover:bg-accent group-hover:text-white transition">Load</span>
-                </button>
-              ))}
-            </div>
-          )}
+          <p className="text-gray-400 mb-6">Upload a model or check your <strong>History</strong> to load a previous project.</p>
         </div>
       </div>
     );
@@ -278,26 +245,7 @@ export default function Dashboard({
                 <StatRow label="Total Blocks" value={graph.groups.length} />
               </div>
             </div>
-            {/* Recent Uploads */}
-            <div className="bg-panel rounded-xl p-5 border border-white/5 lg:col-span-2">
-              <SectionHeader icon="📁" title="Recent Uploads" />
-              {loading && <p className="text-gray-400 text-sm">Loading…</p>}
-              {!loading && uploads.length === 0 && <p className="text-gray-500 text-sm">No recent uploads found.</p>}
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {uploads.slice(0, 6).map((u) => (
-                  <div key={u.job_id} className={`rounded-xl border p-3 bg-[#0f1320] flex items-center justify-between gap-3 ${u.job_id === graph.job_id ? "border-accent/60" : "border-white/5"}`}>
-                    <div className="min-w-0">
-                      <div className="text-sm text-white truncate">{u.filename || "(no filename)"}</div>
-                      <div className="text-xs text-gray-500">{new Date(u.uploaded_at).toLocaleString()}</div>
-                    </div>
-                    <button onClick={() => handleLoad(u.job_id)}
-                      className={`shrink-0 text-xs px-3 py-1 rounded-full transition ${u.job_id === graph.job_id ? "bg-accent text-white" : "bg-white/5 text-gray-300 hover:bg-accent/30"}`}>
-                      {u.job_id === graph.job_id ? "Active" : "Load"}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
+
           </div>
         );
 
