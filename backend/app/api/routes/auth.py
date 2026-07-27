@@ -6,9 +6,13 @@ import httpx
 
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.auth import UserRegister, UserResponse, Token, GoogleAuthRequest, GitHubAuthRequest
+from app.schemas.auth import (
+    UserRegister, UserResponse, Token, GoogleAuthRequest, GitHubAuthRequest,
+    ProfileResponse, ProfileUpdate, PasswordChange,
+)
 from app.core.security import get_password_hash, verify_password, create_access_token
 from app.core.config import settings
+from app.core.deps import get_current_user
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
@@ -336,3 +340,84 @@ async def github_login(body: GitHubAuthRequest, db: Session = Depends(get_db)) -
         )
 
     return _token_for_user(user)
+
+
+# ── Profile Endpoints ────────────────────────────────────
+
+
+@router.get("/me", response_model=ProfileResponse)
+async def get_profile(current_user: User = Depends(get_current_user)) -> ProfileResponse:
+    """Return the currently logged-in user's profile."""
+    return ProfileResponse(
+        user_id=current_user.user_id,
+        email=current_user.email,
+        is_active=current_user.is_active,
+        auth_provider=current_user.auth_provider or "local",
+        created_at=current_user.created_at.isoformat() if current_user.created_at else None,
+    )
+
+
+@router.put("/me", response_model=ProfileResponse)
+async def update_profile(
+    body: ProfileUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ProfileResponse:
+    """Update the current user's profile (email)."""
+    if body.email and body.email != current_user.email:
+        existing = db.query(User).filter(User.email == body.email).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="A user with this email already exists.",
+            )
+        current_user.email = body.email
+        db.commit()
+        db.refresh(current_user)
+        logger.info("User %s updated email to %s", current_user.user_id, body.email)
+
+    return ProfileResponse(
+        user_id=current_user.user_id,
+        email=current_user.email,
+        is_active=current_user.is_active,
+        auth_provider=current_user.auth_provider or "local",
+        created_at=current_user.created_at.isoformat() if current_user.created_at else None,
+    )
+
+
+@router.put("/me/password")
+async def change_password(
+    body: PasswordChange,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Change password for local-auth accounts."""
+    if current_user.auth_provider != "local":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Password cannot be changed for {current_user.auth_provider} accounts. Use your OAuth provider.",
+        )
+
+    if not current_user.hashed_password or not verify_password(body.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect.",
+        )
+
+    current_user.hashed_password = get_password_hash(body.new_password)
+    db.commit()
+    logger.info("User %s changed password", current_user.user_id)
+    return {"message": "Password changed successfully."}
+
+
+@router.delete("/me")
+async def delete_account(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Permanently delete the current user's account."""
+    user_id = current_user.user_id
+    db.delete(current_user)
+    db.commit()
+    logger.info("User %s deleted their account", user_id)
+    return {"message": "Account deleted successfully."}

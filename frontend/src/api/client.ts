@@ -101,3 +101,36 @@ export async function githubLogin(code: string, redirectUri: string): Promise<Au
   return response.data;
 }
 
+/* ── Profile endpoints ──────────────────────────────────── */
+
+export interface ProfileData {
+  user_id: string;
+  email: string;
+  is_active: boolean;
+  auth_provider: string;
+  created_at: string | null;
+}
+
+export async function getProfile(): Promise<ProfileData> {
+  const response = await axios.get<ProfileData>(`${API_BASE}/api/v1/auth/me`);
+  return response.data;
+}
+
+export async function updateProfile(data: { email?: string }): Promise<ProfileData> {
+  const response = await axios.put<ProfileData>(`${API_BASE}/api/v1/auth/me`, data);
+  return response.data;
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<{ message: string }> {
+  const response = await axios.put<{ message: string }>(`${API_BASE}/api/v1/auth/me/password`, {
+    current_password: currentPassword,
+    new_password: newPassword,
+  });
+  return response.data;
+}
+
+export async function deleteAccount(): Promise<{ message: string }> {
+  const response = await axios.delete<{ message: string }>(`${API_BASE}/api/v1/auth/me`);
+  return response.data;
+}
+

@@ -110,7 +110,7 @@ export default function App() {
                   </div>
                 )
               ) : page === "settings" ? (
-                <SettingsPage />
+                <SettingsPage onLogout={handleLogout} />
               ) : page === "history" ? (
                 <HistoryPage
                   currentGraph={graph}

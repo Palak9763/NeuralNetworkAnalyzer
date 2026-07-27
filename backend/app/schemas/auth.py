@@ -38,3 +38,26 @@ class GitHubAuthRequest(BaseModel):
         ...,
         description="Redirect URI used in the OAuth flow (must match the authorize request)"
     )
+
+
+class ProfileResponse(BaseModel):
+    """Full profile info returned by GET /me."""
+    user_id: str
+    email: str
+    is_active: bool
+    auth_provider: str = "local"
+    created_at: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ProfileUpdate(BaseModel):
+    """Fields the user can update on their profile."""
+    email: Optional[str] = Field(None, min_length=3, max_length=100)
+
+
+class PasswordChange(BaseModel):
+    """Payload for changing password (local accounts only)."""
+    current_password: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=6, max_length=100)
