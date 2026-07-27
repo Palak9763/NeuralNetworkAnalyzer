@@ -215,4 +215,4 @@ before the next one starts.
 =======
 #Team Members :Sarthak Darandale,Palak Deshmukh
 NeuralNetworkAnalyzer is a full-stack AI platform that automatically detects deep learning frameworks, parses neural network architectures from uploaded projects or model files, and generates interactive architecture diagrams. Supports PyTorch, TensorFlow, JAX, and custom models with a universal graph visualization engine.
->>>>>>> e9ef88b6d7a7fb1b04db89ad55657cd0af718e86
+
