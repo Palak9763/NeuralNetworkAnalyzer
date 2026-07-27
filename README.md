@@ -207,7 +207,7 @@ exists in the contract so nothing downstream needs to change later.
 | 4 ✅ | Real layout engine (Dagre.js/ELK.js) replacing the simple depth-based layout |
 | 5 ✅| FLOPs + param breakdown (torchinfo/fvcore), Code Preview tab |
 | 6 ✅| PostgreSQL + SQLAlchemy models, JWT auth, Projects/Saved Graphs/History pages |
-| 7 | Redis + Celery for background job processing (once uploads are demonstrably slow) |
+| 7 (pending)| Redis + Celery for background job processing (once uploads are demonstrably slow) |
 | 8 | TensorFlow/Keras parser chain, ONNX as a secondary universal fallback, JAX support, best-effort custom/raw-code parsing via AST pattern-matching |
 
 Build strictly in this order — each phase should be working and tested
