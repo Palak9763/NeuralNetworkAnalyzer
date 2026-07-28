@@ -17,4 +17,8 @@ httpx
 tensorflow-cpu>=2.16
 jax[cpu]
 flax
+onnx>=1.15
+onnxruntime>=1.16
+onnxscript
+tf2onnx>=1.16
 
