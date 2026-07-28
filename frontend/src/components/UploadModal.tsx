@@ -74,7 +74,7 @@ export default function UploadModal({ onClose, onGraphReady }: UploadModalProps)
         )}
 
         <p className="text-xs text-gray-600 mt-4">
-          Phase 1 supports PyTorch models only (torch.fx tracing with AST fallback).
+          Supports PyTorch, TensorFlow, and JAX/Flax models.
         </p>
       </div>
     </div>

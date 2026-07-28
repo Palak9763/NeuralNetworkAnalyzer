@@ -106,7 +106,7 @@ export default function App() {
                   </div>
                 ) : (
                   <div className="h-full flex items-center justify-center text-gray-600 text-sm">
-                    Upload a PyTorch project to see its architecture diagram here.
+                    Upload a deep learning project to see its architecture diagram here.
                   </div>
                 )
               ) : page === "settings" ? (

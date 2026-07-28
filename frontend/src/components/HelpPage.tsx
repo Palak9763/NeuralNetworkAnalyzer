@@ -12,11 +12,11 @@ function SectionHeader({ icon, title }: { icon: string; title: string }) {
 const FAQ_ITEMS = [
   {
     q: "What file formats are supported for upload?",
-    a: "Currently, the analyzer supports PyTorch model files (.py, .pt, .pth) and traced models. Upload a Python file containing your model class or a traced/scripted model checkpoint.",
+    a: "Currently, the analyzer supports PyTorch, TensorFlow (Keras), and JAX/Flax model files. Upload a Python file containing your model class or a checkpoint.",
   },
   {
     q: "How does the model parsing work?",
-    a: "The backend uses PyTorch's tracing mechanism to execute a forward pass with dummy inputs, capturing the computation graph. It then converts this into a universal graph format with nodes, edges, and metadata.",
+    a: "The backend traces the model (using torch.fx, Keras graph, or JAX nn.tabulate) to execute a forward pass with dummy inputs, capturing the computation graph. It then converts this into a universal graph format with nodes, edges, and metadata.",
   },
   {
     q: "What does the confidence level mean?",

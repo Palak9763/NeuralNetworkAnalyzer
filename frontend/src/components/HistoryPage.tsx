@@ -107,7 +107,7 @@ export default function HistoryPage({ currentGraph, onLoadGraph }: HistoryPagePr
           </div>
           <h3 className="text-white text-lg font-semibold">No uploads yet</h3>
           <p className="text-gray-400 text-sm text-center max-w-sm">
-            Upload your first PyTorch model to see it appear here. You can load any past upload to analyze it again.
+            Upload your first PyTorch, TensorFlow, or JAX model to see it appear here. You can load any past upload to analyze it again.
           </p>
         </div>
       )}

@@ -335,7 +335,7 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
         </div>
 
         <p className="text-center text-xs mt-6" style={{ color: "var(--color-text-muted, #6b7280)" }}>
-          Neural Network Analyzer • Powered by PyTorch & FastAPI
+          Neural Network Analyzer • Powered by PyTorch, TF, JAX & FastAPI
         </p>
       </div>
     </div>

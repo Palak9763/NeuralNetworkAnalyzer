@@ -45,11 +45,12 @@ from app.engines.pytorch.ast_parser import parse_with_ast
 from app.engines.pytorch.fx_parser import run_torch_fx
 from app.engines.pytorch.pretrained_parser import has_pretrained_call, run_pretrained_loader
 from app.engines.tensorflow.keras_parser import run_keras_parser
+from app.engines.jax.flax_parser import run_jax_parser
 from app.schemas.graph import Confidence, Framework, UniversalGraph
 
 logger = logging.getLogger(__name__)
 
-_SUPPORTED_FRAMEWORKS = (Framework.PYTORCH, Framework.TENSORFLOW)
+_SUPPORTED_FRAMEWORKS = (Framework.PYTORCH, Framework.TENSORFLOW, Framework.JAX)
 
 
 def _parse_pytorch_file(job_id: str, model_file: Path):
@@ -131,6 +132,16 @@ def parse_project(job_id: str, model_file: Path) -> UniversalGraph:
         except ModelParsingError as keras_error:
             logger.error("job_id=%s Keras parsing failed: %s", job_id, keras_error)
             raise ModelParsingError(f"Could not parse model. Keras error: {keras_error}") from keras_error
+    elif framework == Framework.JAX:
+        try:
+            raw = run_jax_parser(model_file)
+            logger.info("job_id=%s parsed via JAX/Flax parser", job_id)
+            # Dynamic parsing = TRACED, AST fallback = STATIC
+            has_ast_warning = any("static source analysis" in w.lower() for w in raw.warnings)
+            confidence = Confidence.STATIC if has_ast_warning else Confidence.TRACED
+        except ModelParsingError as jax_error:
+            logger.error("job_id=%s JAX parsing failed: %s", job_id, jax_error)
+            raise ModelParsingError(f"Could not parse model. JAX error: {jax_error}") from jax_error
     else:
         # PyTorch
         raw, confidence = _parse_pytorch_file(job_id, model_file)

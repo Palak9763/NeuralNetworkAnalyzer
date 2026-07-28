@@ -307,7 +307,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
               { label: "Version", value: "1.0.0" },
               { label: "Framework", value: "React + Vite" },
               { label: "Backend", value: "FastAPI" },
-              { label: "Parser", value: "PyTorch + TF" },
+              { label: "Parser", value: "PyTorch + TF + JAX" },
             ].map((item) => (
               <div key={item.label} className="bg-[#0a0c12] rounded-xl p-3 border border-white/5">
                 <div className="text-xs text-gray-500 uppercase tracking-widest">{item.label}</div>
