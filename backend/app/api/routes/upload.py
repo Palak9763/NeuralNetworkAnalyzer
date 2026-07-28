@@ -51,3 +51,39 @@ async def upload_project(file: UploadFile = File(...)) -> UploadResponse:
         ) from exc
 
     return UploadResponse(job_id=job_id, filename=file.filename)
+
+
+from app.schemas.graph import ProjectAnalysisResponse, ProjectMetadata
+from app.services.upload_service import handle_project_upload
+from app.services.parser_service import parse_project
+
+@router.post("/analyze-project", response_model=ProjectAnalysisResponse, status_code=status.HTTP_200_OK)
+async def analyze_project(file: UploadFile = File(...)) -> ProjectAnalysisResponse:
+    content = await file.read()
+
+    try:
+        job_id, metadata, primary_model_file = handle_project_upload(filename=file.filename, content=content)
+    except InvalidFileTypeError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    except FileTooLargeError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Unexpected error handling upload")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while saving the upload.",
+        ) from exc
+
+    try:
+        graph = parse_project(job_id=job_id, model_file=primary_model_file)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Error parsing project")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An error occurred while parsing the project: {str(exc)}",
+        ) from exc
+    
+    return ProjectAnalysisResponse(
+        metadata=ProjectMetadata(**metadata),
+        graph=graph
+    )

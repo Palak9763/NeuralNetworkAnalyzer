@@ -77,3 +77,38 @@ def resolve_candidate_model_file(job_id: str) -> Path:
         raise ModelParsingError("No Python (.py) files were found in the uploaded project.")
 
     return candidates[0]
+
+
+def handle_project_upload(filename: str, content: bytes) -> tuple[str, dict, Path]:
+    """
+    Handles a full project upload. Returns:
+    - job_id
+    - project metadata dictionary (to be loaded into ProjectMetadata schema)
+    - path to the primary model file
+    """
+    job_id = handle_upload(filename, content)
+    job_dir = settings.upload_dir / job_id
+    search_root = job_dir / "extracted" if (job_dir / "extracted").exists() else job_dir
+
+    from app.utils.file_handler import scan_project_directory
+    from app.engines.detector.framework_detector import detect_framework
+
+    candidates, scanned_count, dependencies = scan_project_directory(search_root)
+
+    if not candidates:
+        raise ModelParsingError("No Python (.py) files were found in the uploaded project.")
+
+    primary_model_file = candidates[0]
+    
+    framework = detect_framework(primary_model_file)
+
+    metadata = {
+        "detected_framework": framework.value,
+        "primary_model_file": str(primary_model_file.relative_to(search_root)),
+        "files_scanned": scanned_count,
+        "model_candidates": [str(p.relative_to(search_root)) for p in candidates],
+        "dependencies": dependencies,
+        "warnings": [],
+    }
+
+    return job_id, metadata, primary_model_file

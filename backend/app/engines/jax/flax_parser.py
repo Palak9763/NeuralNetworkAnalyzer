@@ -28,9 +28,7 @@ from app.engines.pytorch.ast_parser import RawEdge, RawNode, RawParseResult
 
 logger = logging.getLogger(__name__)
 
-
 # ── Module loading ───────────────────────────────────────────
-
 
 def _load_module_from_path(file_path: Path):
     """Dynamically import a .py file as a standalone module."""
@@ -50,9 +48,7 @@ def _load_module_from_path(file_path: Path):
 
     return module
 
-
 # ── Shape helpers ────────────────────────────────────────────
-
 
 def _shape_to_int_list(shape) -> list[int] | None:
     """Convert JAX/Flax shapes to list[int], mapping None to -1."""
@@ -67,9 +63,7 @@ def _shape_to_int_list(shape) -> list[int] | None:
             return None
     return [int(d) if d is not None else -1 for d in shape]
 
-
 # ── Flax detection ───────────────────────────────────────────
-
 
 def _is_flax_module_class(obj) -> bool:
     """Check if obj is a subclass of flax.linen.Module."""
@@ -90,7 +84,6 @@ def _is_flax_module_class(obj) -> bool:
         pass
     return False
 
-
 def _find_flax_modules(module):
     """Find all Flax nn.Module subclasses defined in the uploaded module."""
     return [
@@ -98,9 +91,7 @@ def _find_flax_modules(module):
         if _is_flax_module_class(obj)
     ]
 
-
 # ── Tier A: Flax nn.Module parser ────────────────────────────
-
 
 def _parse_flax_module(model_class, file_path: Path) -> RawParseResult:
     """

@@ -121,3 +121,17 @@ class JobStatusResponse(BaseModel):
     job_id: str
     status: str  # uploaded | detecting | parsing | done | failed
     detail: Optional[str] = None
+
+
+class ProjectMetadata(BaseModel):
+    detected_framework: str
+    primary_model_file: str
+    files_scanned: int
+    model_candidates: list[str]
+    dependencies: list[str]
+    warnings: list[str]
+
+
+class ProjectAnalysisResponse(BaseModel):
+    metadata: ProjectMetadata
+    graph: UniversalGraph

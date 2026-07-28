@@ -3,8 +3,23 @@ __pycache__/
 *.pyc
 .venv/
 venv/
-storage/uploads/*
-!storage/uploads/.gitkeep
+
+# Upload storage
+backend/storage/uploads/
+backend/storage/uploads/**
+!backend/storage/uploads/.gitkeep
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploaded archives
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
 
 # Frontend
 frontend/node_modules/
@@ -14,7 +29,10 @@ frontend/.env
 # Root node_modules
 node_modules/
 
+# Environment
+backend/.env
+.env
+
 # OS
 .DS_Store
-
-backend/.env
+Thumbs.db

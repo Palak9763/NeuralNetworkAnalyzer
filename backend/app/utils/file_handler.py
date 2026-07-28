@@ -27,7 +27,14 @@ from app.core.exceptions import FileTooLargeError, InvalidFileTypeError
 logger = logging.getLogger(__name__)
 
 MODEL_FILENAME_HINTS = ("model", "network", "architecture", "net")
-MODEL_CONTENT_HINTS = ("nn.Module", "keras.Model", "tf.keras.Model")
+MODEL_CONTENT_HINTS = (
+    "nn.Module", "keras.Model", "tf.keras.Model", "flax.linen.Module",
+    "def forward", "def __call__", "def setup", "Conv", "Dense"
+)
+IGNORE_DIRS = {
+    "venv", ".venv", ".git", "__pycache__", "node_modules",
+    "datasets", "checkpoints", "logs", "build", "dist"
+}
 
 
 def validate_upload(filename: str, size_bytes: int, allowed_extensions: tuple, max_size_mb: int) -> None:
@@ -75,8 +82,17 @@ def find_candidate_model_files(root_dir: Path) -> list[Path]:
     Walk the extracted project and return .py files that are likely to
     contain a neural network model definition, ranked by confidence:
     filename hints first, then content hints, then any remaining .py file.
+    Ignores common non-source directories.
     """
-    all_py_files = [p for p in root_dir.rglob("*.py") if p.is_file()]
+    all_py_files = []
+    for path in root_dir.rglob("*.py"):
+        if not path.is_file():
+            continue
+        # Check if any part of the path is in IGNORE_DIRS
+        if any(part in IGNORE_DIRS for part in path.parts):
+            continue
+        all_py_files.append(path)
+
     if not all_py_files:
         return []
 
@@ -103,6 +119,33 @@ def find_candidate_model_files(root_dir: Path) -> list[Path]:
         len(ranked), root_dir, len(filename_matches), len(content_matches),
     )
     return ranked
+
+
+def scan_project_directory(root_dir: Path) -> tuple[list[Path], int, list[str]]:
+    """
+    Scans the project directory, returns:
+    - Ranked list of candidate model paths
+    - Total number of files scanned (not ignored)
+    - List of detected dependency files (e.g. requirements.txt)
+    """
+    candidate_models = find_candidate_model_files(root_dir)
+    
+    scanned_count = 0
+    dependencies = []
+    
+    for path in root_dir.rglob("*"):
+        if not path.is_file():
+            continue
+        if any(part in IGNORE_DIRS for part in path.parts):
+            continue
+        
+        scanned_count += 1
+        name = path.name.lower()
+        if name in ("requirements.txt", "pyproject.toml"):
+            # Return relative path as string
+            dependencies.append(str(path.relative_to(root_dir)))
+
+    return candidate_models, scanned_count, dependencies
 
 
 def cleanup_job(job_dir: Path) -> None:
