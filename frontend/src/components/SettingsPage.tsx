@@ -48,6 +48,22 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
+  // Avatar state
+  const [avatar, setAvatar] = useState(() => localStorage.getItem("nna-avatar") || "");
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setAvatar(base64String);
+        localStorage.setItem("nna-avatar", base64String);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   useEffect(() => {
     getProfile()
       .then((p) => {
@@ -135,9 +151,17 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
               {/* Profile Info */}
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-accent to-purple-600 flex items-center justify-center text-xl font-bold text-white uppercase shrink-0">
-                    {profile.email.charAt(0)}
-                  </div>
+                  <label className="relative w-14 h-14 rounded-full bg-gradient-to-br from-accent to-purple-600 flex items-center justify-center text-xl font-bold text-white uppercase shrink-0 cursor-pointer overflow-hidden group">
+                    {avatar ? (
+                      <img src={avatar} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      profile.email.charAt(0)
+                    )}
+                    <div className="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center">
+                      <span className="text-[10px]">EDIT</span>
+                    </div>
+                    <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                  </label>
                   <div>
                     <div className="text-white font-medium">{profile.email}</div>
                     <div className="flex items-center gap-2 mt-1">
@@ -181,49 +205,38 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                 </div>
               </div>
 
-              {/* Password Change (local accounts only) */}
+              {/* Password Change */}
               <div className="space-y-4">
-                {profile.auth_provider === "local" ? (
-                  <>
-                    <label className="text-sm text-gray-400 block">Change Password</label>
-                    <input
-                      type="password"
-                      placeholder="Current password"
-                      value={currentPwd}
-                      onChange={(e) => setCurrentPwd(e.target.value)}
-                      className="w-full bg-[#0a0c12] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-accent/50 transition"
-                    />
-                    <input
-                      type="password"
-                      placeholder="New password (min 6 characters)"
-                      value={newPwd}
-                      onChange={(e) => setNewPwd(e.target.value)}
-                      className="w-full bg-[#0a0c12] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-accent/50 transition"
-                    />
-                    <input
-                      type="password"
-                      placeholder="Confirm new password"
-                      value={confirmPwd}
-                      onChange={(e) => setConfirmPwd(e.target.value)}
-                      className="w-full bg-[#0a0c12] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-accent/50 transition"
-                    />
-                    <button
-                      onClick={handlePasswordChange}
-                      disabled={pwdSaving || !currentPwd || !newPwd || !confirmPwd}
-                      className="px-4 py-2 rounded-lg bg-white/5 text-white text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition"
-                    >
-                      {pwdSaving ? "Changing…" : "Change Password"}
-                    </button>
-                    {pwdStatus && <StatusBadge {...pwdStatus} />}
-                  </>
-                ) : (
-                  <div className="bg-white/[0.02] rounded-lg p-4 border border-white/5">
-                    <div className="text-sm text-gray-400">Password Management</div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      Your account uses {providerLabel[profile.auth_provider]} sign-in. Password is managed by your OAuth provider.
-                    </div>
-                  </div>
-                )}
+                <label className="text-sm text-gray-400 block">Change Password</label>
+                <input
+                  type="password"
+                  placeholder="Current password"
+                  value={currentPwd}
+                  onChange={(e) => setCurrentPwd(e.target.value)}
+                  className="w-full bg-[#0a0c12] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-accent/50 transition"
+                />
+                <input
+                  type="password"
+                  placeholder="New password (min 6 characters)"
+                  value={newPwd}
+                  onChange={(e) => setNewPwd(e.target.value)}
+                  className="w-full bg-[#0a0c12] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-accent/50 transition"
+                />
+                <input
+                  type="password"
+                  placeholder="Confirm new password"
+                  value={confirmPwd}
+                  onChange={(e) => setConfirmPwd(e.target.value)}
+                  className="w-full bg-[#0a0c12] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-accent/50 transition"
+                />
+                <button
+                  onClick={handlePasswordChange}
+                  disabled={pwdSaving || !currentPwd || !newPwd || !confirmPwd}
+                  className="px-4 py-2 rounded-lg bg-white/5 text-white text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition"
+                >
+                  {pwdSaving ? "Changing…" : "Change Password"}
+                </button>
+                {pwdStatus && <StatusBadge {...pwdStatus} />}
               </div>
             </div>
           ) : (
@@ -232,30 +245,6 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         </div>
 
 
-
-        {/* Export Defaults */}
-        <div className="bg-panel rounded-xl p-5 border border-white/5">
-          <SectionHeader icon="📤" title="Export Defaults" />
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm text-gray-400 block mb-1">Default Export Format</label>
-              <select className="w-full bg-[#0a0c12] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent/50 transition appearance-none">
-                <option value="png">PNG Image</option>
-                <option value="svg">SVG Vector</option>
-                <option value="json">JSON Data</option>
-                <option value="pdf">PDF Report</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-sm text-gray-400 block mb-1">Image Resolution</label>
-              <select className="w-full bg-[#0a0c12] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent/50 transition appearance-none">
-                <option value="1x">1x (Standard)</option>
-                <option value="2x">2x (Retina)</option>
-                <option value="4x">4x (Print Quality)</option>
-              </select>
-            </div>
-          </div>
-        </div>
 
         {/* Danger Zone */}
         <div className="bg-panel rounded-xl p-5 border border-red-500/20 lg:col-span-2">

@@ -26,6 +26,7 @@ import AuthPage from "./components/AuthPage";
 
 import ModelSummary from "./components/ModelSummary";
 import LayerTable from "./components/LayerTable";
+import LayerPropertiesPanel from "./components/LayerPropertiesPanel";
 import UploadModal from "./components/UploadModal";
 import { fetchGraph } from "./api/client";
 import type { GraphNode, UniversalGraph } from "./types/graph";
@@ -137,7 +138,7 @@ export default function App() {
             )}
           </main>
 
-
+          {page === "visualizer" && <LayerPropertiesPanel node={selectedNode} />}
         </div>
       </div>
 
