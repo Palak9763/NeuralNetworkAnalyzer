@@ -1,0 +1,67 @@
+[project]
+name = "neuralviz"
+version = "0.2.0"
+description = "Instantly visualize your PyTorch / TensorFlow model's architecture from your terminal."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+keywords = ["neural-network", "pytorch", "tensorflow", "visualization", "cli", "deep-learning"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+# ── Runtime dependencies ──────────────────────────────────────────────────────
+# NOTE: torch / tensorflow / jax are intentionally NOT listed here.
+# Those are the USER's own dependencies, already installed in their project
+# environment. Listing them here would force-install potentially conflicting
+# versions into environments that already have their own setup exactly as they
+# want it. The CLI detects and uses whatever is already importable, and gives
+# a clear error message if neither is installed.
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "pydantic>=2.9.0",
+    "numpy>=1.26",
+    # colorama: optional colour output on Windows; gracefully absent = plain text
+    "colorama>=0.4.6",
+]
+
+[project.scripts]
+# This is THE key: tells pip "create a command called `neuralviz` that calls
+# the main() function inside neuralviz/cli.py".
+neuralviz = "neuralviz.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/sarth/NeuralNetworkAnalyzer"
+"Bug Tracker" = "https://github.com/sarth/NeuralNetworkAnalyzer/issues"
+
+# ── Build system ──────────────────────────────────────────────────────────────
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+# Ship the frontend_dist/ static files inside the installed wheel so the browser
+# mode works after a plain `pip install neuralviz` with no separate download.
+include = [
+    "neuralviz/**",
+]
+packages = ["neuralviz"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "neuralviz/**",
+    "README.md",
+    "pyproject.toml",
+]

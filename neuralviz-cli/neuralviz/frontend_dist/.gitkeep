@@ -1,0 +1,4 @@
+# Placeholder — this directory is populated by the build step.
+# Run build_frontend.ps1 (Windows) or build_frontend.sh (Linux/macOS)
+# from the project root to build the frontend and copy the dist/ output here.
+# Without this step the browser mode falls back to serving JSON only.

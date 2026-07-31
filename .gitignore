@@ -1,38 +1,22 @@
-# Backend
-__pycache__/
-*.pyc
+# Python Virtual Environments
 .venv/
 venv/
+env/
+testenv/
+test_release/
+test_venv/
 
-# Upload storage
-backend/storage/uploads/
-backend/storage/uploads/**
-!backend/storage/uploads/.gitkeep
+# Python Build
+build/
+dist/
+*.egg-info/
 
-# Databases
-*.db
-*.sqlite
-*.sqlite3
+# Python cache
+__pycache__/
+*.py[cod]
 
-# Uploaded archives
-*.zip
-*.rar
-*.7z
-*.tar
-*.gz
+# Frontend build cache
+frontend/tsconfig.tsbuildinfo
 
-# Frontend
-frontend/node_modules/
-frontend/dist/
-frontend/.env
-
-# Root node_modules
+#Root node_modules
 node_modules/
-
-# Environment
-backend/.env
-.env
-
-# OS
-.DS_Store
-Thumbs.db

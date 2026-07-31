@@ -27,7 +27,7 @@ import AuthPage from "./components/AuthPage";
 import ModelSummary from "./components/ModelSummary";
 import LayerTable from "./components/LayerTable";
 import UploadModal from "./components/UploadModal";
-import { fetchGraph } from "./api/client";
+import { fetchGraph, fetchLocalGraph, isLocalCLIMode } from "./api/client";
 import type { GraphNode, UniversalGraph } from "./types/graph";
 
 export default function App() {
@@ -53,6 +53,22 @@ export default function App() {
     setGraph(null);
   }
 
+  // Local CLI mode: if ?mode=local is present, fetch the graph from the
+  // local neuralviz server immediately (no auth, no upload flow needed).
+  // This runs once on mount, before the auth check below.
+  useEffect(() => {
+    if (!isLocalCLIMode()) return;
+    (async () => {
+      try {
+        const g = await fetchLocalGraph();
+        setGraph(g);
+        setPage("visualizer");
+      } catch (e) {
+        console.error("neuralviz local mode: failed to fetch graph", e);
+      }
+    })();
+  }, []);
+
   useEffect(() => {
     if (!authToken) return;
     // If a shared link includes ?job=<job_id>, fetch that graph on load
@@ -70,8 +86,9 @@ export default function App() {
     }
   }, [authToken]);
 
-  // Show auth page if not logged in
-  if (!authToken) {
+  // In local CLI mode, bypass auth entirely and go straight to the visualizer.
+  // isLocalCLIMode() is evaluated once per render (cheap URLSearchParams call).
+  if (!authToken && !isLocalCLIMode()) {
     return (
       <>
         <AuthPage onLoginSuccess={handleLoginSuccess} />

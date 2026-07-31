@@ -51,6 +51,24 @@ export async function fetchGraph(jobId: string): Promise<UniversalGraph> {
   return response.data;
 }
 
+// ── Local CLI mode helpers ────────────────────────────────────────────────────
+// When neuralviz starts a local server and opens the browser with ?mode=local,
+// the frontend skips the upload flow and fetches the pre-parsed graph directly
+// from the local server. This is entirely additive — if ?mode=local is absent
+// (i.e. the normal hosted web app) all existing behaviour is unchanged.
+
+export function isLocalCLIMode(): boolean {
+  return new URLSearchParams(window.location.search).get("mode") === "local";
+}
+
+export async function fetchLocalGraph(): Promise<UniversalGraph> {
+  // The neuralviz local server always serves the graph at /neuralviz/graph
+  // on the same host+port as the page itself (127.0.0.1:<random_port>).
+  const base = `${window.location.protocol}//${window.location.host}`;
+  const response = await axios.get<UniversalGraph>(`${base}/neuralviz/graph`);
+  return response.data;
+}
+
 export async function fetchUploads(): Promise<Array<{job_id: string; filename: string; uploaded_at: string;}>> {
   const response = await axios.get(`${API_BASE}/api/v1/uploads`);
   return response.data;
