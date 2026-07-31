@@ -1,218 +1,250 @@
+# NeuralNetworkAnalyzer & NeuralViz CLI
 
-# NeuralNetworkAnalyzer
+[![Python Version](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue.svg)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688.svg)](https://fastapi.tiangolo.com/)
+[![React Flow](https://img.shields.io/badge/Frontend-React%20Flow-ff007f.svg)](https://reactflow.dev/)
+[![CLI Package](https://img.shields.io/badge/PyPI-neuralviz--0.2.0-orange.svg)](https://pypi.org/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-
-Upload a PyTorch model → get an interactive, auto-generated architecture
-diagram (React Flow), with real layer shapes, parameter counts, and a
-click-to-inspect properties panel.
-
-This repo contains **Phase 1 + Phase 2** of the full project roadmap:
-a working, tested, end-to-end slice (upload → detect → parse → render),
-built with no database, no auth, and no job queue — those are deliberately
-deferred to later phases (see [Roadmap](#roadmap) below).
+> **NeuralNetworkAnalyzer** is an enterprise-grade AI platform and CLI tool (`neuralviz`) that automatically inspects deep learning model code, detects framework usage (PyTorch, Hugging Face Transformers, TensorFlow/Keras, JAX/Flax, ONNX), and builds interactive, visual architecture diagrams with layer properties, parameter counts, and skip-connection topology.
 
 ---
 
-## What's included right now
+## 💡 Project Understanding & Architecture Vision
 
-**Backend (FastAPI)**
-- `POST /api/v1/upload` — accepts `.py` or `.zip`, validates size/type
-- `GET /api/v1/graph/{job_id}` — runs the parsing chain, returns the
-  Universal Graph JSON
-- Framework Detector — reads imports via Python's `ast` module
-- **Tier 1 parser: torch.fx** — traces real execution, captures real
-  input/output shapes and parameter counts per layer
-- **Tier 2 parser: AST fallback** — static source analysis, works even
-  when a model can't actually be instantiated/run (missing weights,
-  constructor args that can't be inferred, etc.)
-- Every response follows one fixed JSON contract regardless of which
-  tier produced it (see `backend/app/schemas/graph.py`)
+Deep learning models are often defined across complex Python source files, Hugging Face hub checkpoints, or serialized ONNX binaries. Understanding, reviewing, and debugging these architectures manually requires tedious code reading or heavy execution setup.
 
-**Frontend (React + TypeScript + Vite + Tailwind + React Flow)**
-- Sidebar, top bar with framework/confidence badges, upload modal
-- Interactive diagram: color-coded layer types, skip-connection styling,
-  zoom/pan, minimap
-- Click a node → Layer Properties panel (type, shape, params)
-- Model Summary card + sortable Layer Table
-
-**Verified working end-to-end** — a real `SimpleCNN` was uploaded and
-parsed via torch.fx (correct shapes/params extracted), and a model with
-required constructor args was uploaded to confirm the AST fallback
-triggers correctly when tracing fails.
+**NeuralNetworkAnalyzer** solves this with a **Zero-Weight-Loading, Tiered Parsing Engine**:
+1. **Framework-Agnostic Contract**: Converts any deep learning architecture into a single fixed JSON schema (`UniversalGraph`).
+2. **Zero-Memory Hugging Face Parsing**: Parses models like TrOCR, ViT, LLaMA, GPT-2, and BLIP by fetching **only lightweight `config.json` (~3 KB)**, preventing system memory spikes and `OSError 1455` (Windows paging file limits).
+3. **Multi-Tier Execution Fallback**: Combines dynamic execution tracing (`torch.fx`, Keras tracing), ONNX graph export, and static AST code parsing (`ast.NodeVisitor`) so even unrunnable, incomplete code can be visualized.
+4. **Dual Interfaces**: 
+   - **Web Application**: Interactive React Flow canvas with zoom, pan, minimap, group collapsing, and layer property inspection.
+   - **CLI Tool (`neuralviz`)**: Zero-config terminal launcher supporting interactive browser mode, terminal ASCII rendering, and JSON dumping.
 
 ---
 
-## Running it locally
+## 🔄 Interactive System Workflows
 
-### Backend
+### 1. High-Level Ingestion & Dual Output Flow
 
-On Windows PowerShell:
+```mermaid
+graph TD
+    User([User / Developer]) -->|Upload .py / .zip| Web[Web App / FastAPI]
+    User -->|Run CLI command| CLI[NeuralViz CLI Tool]
+
+    subgraph Core Engine Layer
+        FD[Framework Detector]
+        PS[Parser Service Orchestrator]
+        GE[Grouping Engine]
+        UG[Universal Graph Normalizer]
+
+        FD -->|Detect PyTorch / HF / TF / JAX / ONNX| PS
+        PS -->|Raw Parse Result| UG
+        UG --> GE
+    end
+
+    Web --> FD
+    CLI --> FD
+
+    GE -->|UniversalGraph Contract| WebOut[React Flow Web Canvas]
+    GE -->|UniversalGraph Contract| CLIOut[Terminal ASCII / Local Server / JSON]
+```
+
+---
+
+### 2. Multi-Tier Parsing Fallback Chain
+
+```mermaid
+flowchart TD
+    Start([Input Source Code / Model File]) --> FrameworkCheck{Detect Framework}
+
+    %% PyTorch & HF Branch
+    FrameworkCheck -->|PyTorch / Hugging Face| HasPretrained{Contains from_pretrained?}
+    HasPretrained -->|Yes| Tier0[Tier 0: HF Config-Only Parser<br/><i>Downloads config.json only (~3KB), NO weights</i>]
+    Tier0 -->|Success| Normalizer
+    Tier0 -->|Network / Auth Error| Tier2
+
+    HasPretrained -->|No| Tier1[Tier 1: torch.fx Tracing<br/><i>Full execution tracing & shapes</i>]
+    Tier1 -->|Success| Normalizer
+    Tier1 -->|Tracing Failed| Tier15[Tier 1.5: ONNX Export Fallback]
+    Tier15 -->|Success| Normalizer
+    Tier15 -->|Export Failed| Tier2[Tier 2: Source AST Visitor<br/><i>Static source analysis via NodeVisitor</i>]
+    Tier2 --> Normalizer
+
+    %% TensorFlow Branch
+    FrameworkCheck -->|TensorFlow / Keras| TF1[Keras Tracing Engine]
+    TF1 -->|Success| Normalizer
+    TF1 -->|Failed| TF2[tf2onnx Export Fallback]
+    TF2 --> Normalizer
+
+    %% JAX / Flax Branch
+    FrameworkCheck -->|JAX / Flax| JAX1[Flax / Haiku Inspection]
+    JAX1 -->|Success| Normalizer
+    JAX1 -->|Failed| JAX2[JAX AST Code Parser]
+    JAX2 --> Normalizer
+
+    %% ONNX Branch
+    FrameworkCheck -->|ONNX Binary / Extension| ONNX1[Direct ONNX Graph Reader]
+    ONNX1 --> Normalizer
+
+    %% Raw Code Fallback
+    FrameworkCheck -->|Unknown / Framework-Free| RawAST[Custom Raw-Code AST Pattern Matcher]
+    RawAST --> Normalizer
+
+    Normalizer[Universal Graph Normalizer] --> Grouping[Grouping Engine<br/><i>ConvBlocks, Residual Skip-Connections, Stages</i>]
+    Grouping --> End([Final UniversalGraph Contract])
+```
+
+---
+
+### 3. Detailed Sequence Diagram: Hugging Face Config-Only Pipeline
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Developer
+    participant CLI as NeuralViz CLI / Web Backend
+    participant Detector as Framework Detector
+    participant Service as Parser Service
+    participant HFParser as HF Config Parser
+    participant Hub as Hugging Face Hub API
+    participant Grouping as Grouping Engine
+
+    Developer->>CLI: neuralviz ocr_pipeline.py
+    CLI->>Detector: detect_framework("ocr_pipeline.py")
+    Detector-->>CLI: Framework.PYTORCH (via 'transformers' import)
+    CLI->>Service: parse_project(job_id, path)
+    Service->>Service: has_pretrained_call() -> True
+    Service->>HFParser: run_hf_config_parser(path)
+    HFParser->>Hub: AutoConfig.from_pretrained("microsoft/trocr-base-handwritten")
+    Hub-->>HFParser: Return config.json (<10 KB)
+    HFParser->>HFParser: Execute VisionEncoderDecoder Graph Builder
+    HFParser-->>Service: RawParseResult (Canonical Layer Graph)
+    Service->>Grouping: build_universal_graph() + build_groups()
+    Grouping-->>CLI: UniversalGraph JSON
+    CLI-->>Developer: Render Interactive Browser UI / ASCII Terminal Diagram
+```
+
+---
+
+## ⚡ Framework Support Matrix
+
+| Framework / Ecosystem | Detection Import / Extension | Parsing Strategy | Weight Loading |
+|---|---|---|:---:|
+| **Hugging Face Transformers** | `transformers`, `diffusers` | **Tier 0 Config-Only** (`AutoConfig.from_pretrained`) | ❌ **No (0 MB)** |
+| **PyTorch (`nn.Module`)** | `torch`, `timm`, `peft`, `accelerate` | `torch.fx` → ONNX Export → AST Visitor | ❌ Static / Optional |
+| **TensorFlow / Keras** | `tensorflow`, `keras`, `tf_keras` | Keras Functional/Sequential → `tf2onnx` | ❌ Static / Optional |
+| **JAX / Flax / Haiku** | `jax`, `flax`, `haiku`, `optax` | Flax Module tabulate → JAX AST Engine | ❌ Static / Optional |
+| **ONNX** | `.onnx` extension, `onnxruntime` | Direct ONNX Protobuf Protostructure Engine | ❌ No |
+| **Framework-Free Code** | NumPy / Raw Math Operations | Custom AST Pattern Matching Engine | ❌ No |
+
+---
+
+## 🚀 Quick Start: Web Application (`NeuralNetworkAnalyzer`)
+
+### 1. Run Backend Server (FastAPI)
 
 ```powershell
 cd backend
-py -3 -m venv venv
+python -m venv venv
 .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
+*API docs available at:* `http://localhost:8000/docs`
 
-If PowerShell blocks script execution, run this once first:
-
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-```
-
-Visit `http://localhost:8000/docs` for interactive API docs.
-
-### Frontend
+### 2. Run Frontend Client (React + Vite)
 
 ```powershell
 cd frontend
 npm install
-Copy-Item .env.example .env      # defaults to http://localhost:8000
 npm run dev
 ```
-
-Visit `http://localhost:5173`.
-
-### Try it
-
-1. Open the frontend, click **"+ Upload Project"**
-2. Upload any `.py` file containing a `torch.nn.Module` subclass with a
-   no-argument constructor (see `backend/sample_models/simple_cnn.py`
-   for a working example)
-3. The diagram renders automatically; click any node to see its details
+*Open web interface at:* `http://localhost:5173`
 
 ---
 
-## Project structure
+## 📦 Quick Start: CLI Tool (`neuralviz`)
 
+The CLI package can be run directly against any Python file or project folder without setting up the full backend web server.
+
+### Installation
+
+```bash
+pip install neuralviz
 ```
-backend/
-  app/
-    api/routes/          # HTTP layer only — no business logic here
-      upload.py
-      graph.py
-      health.py
-    core/
-      config.py           # environment-driven settings
-      exceptions.py        # domain exception hierarchy
-    engines/
-      detector/            # framework detection (ast-based)
-      pytorch/
-        fx_parser.py        # Tier 1: torch.fx tracing
-        ast_parser.py        # Tier 2: static AST fallback
-      graph/
-        universal_graph.py   # normalizes any parser's output -> fixed schema
-    schemas/
-      graph.py              # the Universal Graph JSON contract (pydantic)
-    services/
-      upload_service.py      # upload orchestration
-      parser_service.py       # detect -> parse chain -> fallback orchestration
-    utils/
-      file_handler.py          # pure filesystem helpers
-    main.py                     # FastAPI app entrypoint
-  requirements.txt
-  storage/uploads/               # local temp storage (gitignored)
 
-frontend/
-  src/
-    api/client.ts                # typed wrapper over backend endpoints
-    types/graph.ts                # TS mirror of backend schemas/graph.py
-    components/
-      Sidebar.tsx
-      TopBar.tsx
-      GraphCanvas.tsx              # React Flow rendering
-      LayerPropertiesPanel.tsx
-      ModelSummary.tsx
-      LayerTable.tsx
-      UploadModal.tsx
-    App.tsx
-    main.tsx
-  package.json
+### CLI Command Options
+
+```bash
+# 1. Open interactive React Flow diagram in browser (default)
+neuralviz my_model.py
+
+# 2. Print ASCII text diagram directly in terminal
+neuralviz my_model.py --text
+
+# 3. Dump raw UniversalGraph JSON to stdout (pipe-friendly)
+neuralviz my_model.py --json | jq .
+
+# 4. Run completely offline using local Hugging Face cache (~/.cache/huggingface/)
+neuralviz ocr_pipeline.py --offline
+
+# 5. Point to a project directory — auto-detects the best model file
+neuralviz my_project_directory/
+
+# 6. Specify custom port for local browser mode
+neuralviz my_model.py --port 8842
 ```
 
 ---
 
-## The Universal Graph contract
+## 📁 Repository Structure
 
-Every parser (PyTorch now, TensorFlow/JAX/custom later) must produce this
-exact shape. It's what lets the frontend, and every stage after parsing,
-stay identical no matter which framework or tier produced the data.
-
-```json
-{
-  "job_id": "1e2929812e1b",
-  "model_name": "SimpleCNN",
-  "meta": {
-    "framework": "pytorch",
-    "confidence": "traced",
-    "total_params": 1008618,
-    "total_layers": 8,
-    "flops": null,
-    "warnings": []
-  },
-  "nodes": [
-    {
-      "id": "node_1",
-      "type": "Conv2d",
-      "label": "conv1",
-      "input_shape": [1, 3, 224, 224],
-      "output_shape": [1, 16, 224, 224],
-      "params": 448,
-      "group_id": null
-    }
-  ],
-  "edges": [
-    { "source": "node_1", "target": "node_2", "is_skip_connection": false }
-  ]
-}
+```
+NeuralNetworkAnalyzer/
+├── README.md                           # Main repository documentation & architecture guide
+├── backend/                            # FastAPI Web Backend
+│   ├── app/
+│   │   ├── api/routes/                 # Upload, Graph, and Health routes
+│   │   ├── core/                       # Settings & structured domain exceptions
+│   │   ├── engines/
+│   │   │   ├── detector/               # Framework detection engine
+│   │   │   ├── pytorch/                # FX parser, AST parser, Pretrained parser
+│   │   │   ├── tensorflow/             # Keras parser
+│   │   │   ├── jax/                    # Flax / Haiku parser engine
+│   │   │   ├── onnx/                   # Direct ONNX parser
+│   │   │   └── graph/                  # UniversalGraph normalizer & Grouping engine
+│   │   ├── schemas/                    # Pydantic UniversalGraph contract
+│   │   ├── services/                   # Orchestrator & parsing chain service
+│   │   └── main.py                     # FastAPI application entrypoint
+│   └── requirements.txt
+│
+├── frontend/                           # React + Vite + React Flow Frontend
+│   ├── src/
+│   │   ├── components/                 # GraphCanvas, Sidebar, TopBar, LayerProperties
+│   │   ├── types/                      # TypeScript mirror of UniversalGraph
+│   │   └── App.tsx
+│   └── package.json
+│
+└── neuralviz-cli/                      # Standalone CLI Package (PyPI: neuralviz)
+    ├── pyproject.toml                  # Hatchling build & entrypoint configuration
+    └── neuralviz/
+        ├── cli.py                      # Terminal entrypoint & argument parser
+        ├── local_server.py             # Embedded browser server
+        ├── text_render.py              # Terminal ASCII tree renderer
+        └── _vendored/                  # Standalone CLI-vendored parser engine
 ```
 
-`confidence` is `"traced"` when torch.fx successfully ran the model, or
-`"static"` when it fell back to AST-only analysis. `group_id` stays
-`null` until Phase 3 (block grouping) is built — the field already
-exists in the contract so nothing downstream needs to change later.
+---
+
+## 👥 Team Members & Credits
+
+- **Sarthak Darandale**
+- **Palak Deshmukh**
 
 ---
 
-## Known limitations of this phase (by design)
+## 📄 License
 
-- **PyTorch only.** TensorFlow/JAX/custom-code uploads are detected and
-  rejected with a clear message, not silently mishandled.
-- **No-argument model constructors only** for the torch.fx tier. Models
-  requiring constructor arguments (e.g. `num_classes`) automatically fall
-  back to the AST tier, which has no such requirement but produces less
-  detail (no confirmed shapes/params).
-- **No grouping yet.** Every individual op (Conv2d, ReLU, BatchNorm2d...)
-  is its own node — deep models like ResNet50 will render as a long flat
-  chain rather than grouped "Stage 1 - Conv2_x" blocks. That's Phase 3.
-- **Simple layered auto-layout**, not Dagre.js/ELK.js. Works fine for
-  linear/simple-branching models; will get replaced in Phase 4.
-- **No persistence.** Uploads live in `backend/storage/uploads/{job_id}/`
-  and are never cleaned up automatically yet — fine for local dev, not
-  for production.
-- **Synchronous parsing.** Large models will block the request thread.
-  Acceptable until Phase 7 adds Celery/Redis.
-
----
-
-## Roadmap
-
-| Phase | What it adds |
-|---|---|
-| 1 ✅ | Core parsing engine: upload, framework detection, torch.fx + AST chain, Universal Graph JSON |
-| 2 ✅ | React Flow rendering, Layer Properties panel, Model Summary, Layer Table |
-| 3 ✅  | Grouping engine: collapse Conv+BN+ReLU into blocks, detect skip connections, detect repeated blocks (`Block × N`) |
-| 4 ✅ | Real layout engine (Dagre.js/ELK.js) replacing the simple depth-based layout |
-| 5 ✅| FLOPs + param breakdown (torchinfo/fvcore), Code Preview tab |
-| 6 ✅| PostgreSQL + SQLAlchemy models, JWT auth, Projects/Saved Graphs/History pages |
-| 7 (pending)| Redis + Celery for background job processing (once uploads are demonstrably slow) |
-| 8 | TensorFlow/Keras parser chain, ONNX as a secondary universal fallback, JAX support, best-effort custom/raw-code parsing via AST pattern-matching |
-
-Build strictly in this order — each phase should be working and tested
-before the next one starts.
-=======
-#Team Members :Sarthak Darandale,Palak Deshmukh
-NeuralNetworkAnalyzer is a full-stack AI platform that automatically detects deep learning frameworks, parses neural network architectures from uploaded projects or model files, and generates interactive architecture diagrams. Supports PyTorch, TensorFlow, JAX, and custom models with a universal graph visualization engine.
-
+This project is licensed under the **MIT License**.

@@ -1,111 +1,100 @@
 # neuralviz
 
-**Instantly visualize your PyTorch / TensorFlow model's architecture — right from your terminal.**
+**Instantly visualize your PyTorch, Hugging Face, TensorFlow, and JAX model architecture — right from your terminal.**
 
-```
+[![PyPI](https://img.shields.io/pypi/v/neuralviz.svg)](https://pypi.org/project/neuralviz/)
+[![Python Version](https://img.shields.io/pypi/pyversions/neuralviz.svg)](https://pypi.org/project/neuralviz/)
+[![License](https://img.shields.io/github/license/sarth/NeuralNetworkAnalyzer.svg)](LICENSE)
+
+```bash
 pip install neuralviz
 neuralviz path/to/my_model.py
 ```
 
-No server setup. No upload. No account. Just point it at your model file.
+No server setup. No file uploads. No account required. Point it at your model file or directory.
 
 ---
 
-## Features
+## ⚡ Key Features
 
-- **Browser mode** (default): spawns a local server and opens the full interactive diagram in your browser — the same React/ReactFlow UI as the hosted app
-- **Text mode** (`--text`): prints a clean ASCII architecture diagram directly in your terminal, with group brackets and param counts
-- **JSON mode** (`--json`): dumps the raw `UniversalGraph` JSON to stdout — pipe it into `jq`, `python -m json.tool`, or any other tool
-- **Directory support**: pass a folder and `neuralviz` finds the most likely model file automatically
-- **Tiered parsing**: tries `torch.fx` (highest fidelity) → ONNX export → AST static analysis, falling back gracefully
+- 🌐 **Browser mode** (default): Spawns a local embedded server and opens an interactive React Flow diagram in your browser.
+- 📺 **Text mode** (`--text`): Prints a clean ASCII architecture diagram directly in your terminal with group brackets and parameter counts.
+- 📄 **JSON mode** (`--json`): Dumps the raw `UniversalGraph` JSON contract to stdout (pipe-friendly for `jq` or custom tools).
+- 📴 **Offline mode** (`--offline`): Disables all network access and parses Hugging Face models using only the local cache (`~/.cache/huggingface/`).
+- ⚡ **Zero-Weight Hugging Face Config Parser**: Parses models like TrOCR, ViT, LLaMA, GPT-2, and BLIP using **only `config.json` (~3 KB)** without downloading weights or exhausting system RAM (`OSError 1455`).
+- 📁 **Directory Auto-Detection**: Pass a project folder and `neuralviz` automatically selects the primary model file.
 
-## Supported frameworks
+---
 
-| Framework | Status |
-|-----------|--------|
-| PyTorch (`nn.Module`) | ✅ Full support |
-| TensorFlow / Keras | ✅ Full support |
-| Framework-free (NumPy only) | ✅ Pattern matching |
-| Pretrained hub models | ✅ Auto-detected |
+## 🔄 Supported Frameworks
 
-## Requirements
+| Framework / Ecosystem | Parsing Tier Strategy | Status |
+|-----------------------|-----------------------|:------:|
+| **Hugging Face Transformers** | Tier 0: Config-Only (`AutoConfig.from_pretrained`) | ✅ Full Support |
+| **PyTorch (`nn.Module`)** | `torch.fx` → ONNX Export → AST Visitor | ✅ Full Support |
+| **TensorFlow / Keras** | Keras Functional/Sequential → `tf2onnx` | ✅ Full Support |
+| **JAX / Flax / Haiku** | Flax Module Inspection → JAX AST Engine | ✅ Full Support |
+| **ONNX** | Direct `.onnx` Graph Reader | ✅ Full Support |
+| **Framework-Free Math** | Custom AST Pattern Matcher | ✅ Full Support |
 
-- Python 3.9+
-- Your model's framework already installed in the same environment:
-  - PyTorch: `pip install torch`
-  - TensorFlow: `pip install tensorflow` or `tensorflow-cpu`
+---
 
-`neuralviz` does **not** install `torch` or `tensorflow` for you — it uses whatever is already in your environment, to avoid version conflicts.
-
-## Usage
+## 🚀 Usage Examples
 
 ```bash
 # Open interactive browser diagram (default)
 neuralviz path/to/my_model.py
 
-# Print ASCII text diagram in terminal
+# Run in terminal text mode (ASCII rendering)
 neuralviz path/to/my_model.py --text
 
-# Use a specific port instead of a random one
+# Use offline mode (reads local Hugging Face cache only)
+neuralviz ocr_pipeline.py --offline
+
+# Specify custom port for local browser mode
 neuralviz path/to/my_model.py --port 8842
 
-# Dump raw JSON (pipe-friendly)
+# Dump raw JSON (pipe to jq or python json.tool)
 neuralviz path/to/my_model.py --json | python -m json.tool
 
-# Point at a directory — auto-finds the best candidate
+# Pass a directory — auto-finds candidate model file
 neuralviz path/to/my_project/
 
-# Show version
+# Check installed version
 neuralviz --version
 ```
 
-## Example text output
+---
+
+## 📺 ASCII Terminal Output Example (`--text`)
 
 ```
-Model: SimpleCNN  (pytorch, traced)
-────────────────────────────────────────────────────────────────
-[ConvBlock]
-  conv1    Conv2d        →  16×224×224   (448 params)
-  relu     ReLU          →  16×224×224
-  pool     MaxPool2d     →  16×112×112
-[ConvBlock]
-  conv2    Conv2d        →  32×112×112   (4,640 params)
-  relu     ReLU          →  32×112×112
-  pool     MaxPool2d     →  32×56×56
-flatten    Flatten       →  100352
-fc         Linear        →  10           (1,003,530 params)
-────────────────────────────────────────────────────────────────
-Total layers: 8   Total params: 1,008,618   FLOPs: 163.98M
+Model: VisionEncoderDecoderModel (microsoft/trocr-base-handwritten) (pytorch, static)
+────────────────────────────────────────────────────────────────────────
+  [encoder.embeddings]          VisionEmbeddings     →  PatchEmbeddings
+  [encoder.layer.0]             ViTLayer             →  TransformerBlock
+  [encoder.layer.1]             ViTLayer             →  TransformerBlock
+  ... (10 layers)
+  [decoder.embeddings]          TrOCREmbeddings      →  TextEmbeddings
+  [decoder.layer.0]             TrOCRDecoderLayer    →  DecoderBlock
+  [decoder.layer.1]             TrOCRDecoderLayer    →  DecoderBlock
+  ... (10 layers)
+  [lm_head]                     LMHead               →  LinearProjections
+────────────────────────────────────────────────────────────────────────
+Architecture built from config.json only (model_type='vision-encoder-decoder').
+No weights loaded. System RAM protected.
 ```
 
-## Building for development
+---
 
-```bash
-# 1. Build the frontend (requires Node.js)
-cd frontend
-npm install
-npm run build
-cd ..
+## 👥 Authors & Credits
 
-# 2. Copy the build output into the CLI package
-.\neuralviz-cli\build_frontend.ps1   # Windows
-# or
-sh neuralviz-cli/build_frontend.sh   # Linux/macOS
+Developed as part of the **NeuralNetworkAnalyzer** platform by:
+- **Sarthak Darandale**
+- **Palak Deshmukh**
 
-# 3. Install in editable mode
-pip install -e neuralviz-cli/
-```
+---
 
-## Publishing to PyPI
+## 📄 License
 
-```bash
-cd neuralviz-cli
-pip install build twine
-python -m build
-twine upload --repository testpypi dist/*   # test first
-twine upload dist/*                          # publish for real
-```
-
-## License
-
-MIT
+MIT License
