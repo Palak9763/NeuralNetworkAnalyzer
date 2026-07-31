@@ -30,25 +30,25 @@ Deep learning models are often defined across complex Python source files, Huggi
 
 ```mermaid
 graph TD
-    User([User / Developer]) -->|Upload .py / .zip| Web[Web App / FastAPI]
-    User -->|Run CLI command| CLI[NeuralViz CLI Tool]
+    User(["User / Developer"]) -->|"Upload .py / .zip"| Web["Web App / FastAPI"]
+    User -->|"Run CLI command"| CLI["NeuralViz CLI Tool"]
 
     subgraph Core Engine Layer
-        FD[Framework Detector]
-        PS[Parser Service Orchestrator]
-        GE[Grouping Engine]
-        UG[Universal Graph Normalizer]
+        FD["Framework Detector"]
+        PS["Parser Service Orchestrator"]
+        GE["Grouping Engine"]
+        UG["Universal Graph Normalizer"]
 
-        FD -->|Detect PyTorch / HF / TF / JAX / ONNX| PS
-        PS -->|Raw Parse Result| UG
+        FD -->|"Detect Framework"| PS
+        PS -->|"Raw Parse Result"| UG
         UG --> GE
     end
 
     Web --> FD
     CLI --> FD
 
-    GE -->|UniversalGraph Contract| WebOut[React Flow Web Canvas]
-    GE -->|UniversalGraph Contract| CLIOut[Terminal ASCII / Local Server / JSON]
+    GE -->|"UniversalGraph Contract"| WebOut["React Flow Web Canvas"]
+    GE -->|"UniversalGraph Contract"| CLIOut["Terminal ASCII / Local Server / JSON"]
 ```
 
 ---
@@ -57,43 +57,43 @@ graph TD
 
 ```mermaid
 flowchart TD
-    Start([Input Source Code / Model File]) --> FrameworkCheck{Detect Framework}
+    Start(["Input Source Code / Model File"]) --> FrameworkCheck{"Detect Framework"}
 
     %% PyTorch & HF Branch
-    FrameworkCheck -->|PyTorch / Hugging Face| HasPretrained{Contains from_pretrained?}
-    HasPretrained -->|Yes| Tier0[Tier 0: HF Config-Only Parser<br/><i>Downloads config.json only (~3KB), NO weights</i>]
-    Tier0 -->|Success| Normalizer
-    Tier0 -->|Network / Auth Error| Tier2
+    FrameworkCheck -->|"PyTorch / Hugging Face"| HasPretrained{"Contains from_pretrained?"}
+    HasPretrained -->|"Yes"| Tier0["Tier 0: HF Config-Only Parser (config.json only, NO weights)"]
+    Tier0 -->|"Success"| Normalizer
+    Tier0 -->|"Network / Auth Error"| Tier2
 
-    HasPretrained -->|No| Tier1[Tier 1: torch.fx Tracing<br/><i>Full execution tracing & shapes</i>]
-    Tier1 -->|Success| Normalizer
-    Tier1 -->|Tracing Failed| Tier15[Tier 1.5: ONNX Export Fallback]
-    Tier15 -->|Success| Normalizer
-    Tier15 -->|Export Failed| Tier2[Tier 2: Source AST Visitor<br/><i>Static source analysis via NodeVisitor</i>]
+    HasPretrained -->|"No"| Tier1["Tier 1: torch.fx Tracing (Full execution tracing & shapes)"]
+    Tier1 -->|"Success"| Normalizer
+    Tier1 -->|"Tracing Failed"| Tier15["Tier 1.5: ONNX Export Fallback"]
+    Tier15 -->|"Success"| Normalizer
+    Tier15 -->|"Export Failed"| Tier2["Tier 2: Source AST Visitor (Static source analysis via NodeVisitor)"]
     Tier2 --> Normalizer
 
     %% TensorFlow Branch
-    FrameworkCheck -->|TensorFlow / Keras| TF1[Keras Tracing Engine]
-    TF1 -->|Success| Normalizer
-    TF1 -->|Failed| TF2[tf2onnx Export Fallback]
+    FrameworkCheck -->|"TensorFlow / Keras"| TF1["Keras Tracing Engine"]
+    TF1 -->|"Success"| Normalizer
+    TF1 -->|"Failed"| TF2["tf2onnx Export Fallback"]
     TF2 --> Normalizer
 
     %% JAX / Flax Branch
-    FrameworkCheck -->|JAX / Flax| JAX1[Flax / Haiku Inspection]
-    JAX1 -->|Success| Normalizer
-    JAX1 -->|Failed| JAX2[JAX AST Code Parser]
+    FrameworkCheck -->|"JAX / Flax"| JAX1["Flax / Haiku Inspection"]
+    JAX1 -->|"Success"| Normalizer
+    JAX1 -->|"Failed"| JAX2["JAX AST Code Parser"]
     JAX2 --> Normalizer
 
     %% ONNX Branch
-    FrameworkCheck -->|ONNX Binary / Extension| ONNX1[Direct ONNX Graph Reader]
+    FrameworkCheck -->|"ONNX Binary / Extension"| ONNX1["Direct ONNX Graph Reader"]
     ONNX1 --> Normalizer
 
     %% Raw Code Fallback
-    FrameworkCheck -->|Unknown / Framework-Free| RawAST[Custom Raw-Code AST Pattern Matcher]
+    FrameworkCheck -->|"Unknown / Framework-Free"| RawAST["Custom Raw-Code AST Pattern Matcher"]
     RawAST --> Normalizer
 
-    Normalizer[Universal Graph Normalizer] --> Grouping[Grouping Engine<br/><i>ConvBlocks, Residual Skip-Connections, Stages</i>]
-    Grouping --> End([Final UniversalGraph Contract])
+    Normalizer["Universal Graph Normalizer"] --> Grouping["Grouping Engine (ConvBlocks, Residual Skip-Connections, Stages)"]
+    Grouping --> End(["Final UniversalGraph Contract"])
 ```
 
 ---
