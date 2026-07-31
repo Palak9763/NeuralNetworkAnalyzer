@@ -160,6 +160,26 @@ def _parse_tensorflow_file(job_id: str, model_file: Path):
         ) from onnx_error
 
 
+def _parse_jax_file(job_id: str, model_file: Path):
+    """Runs the JAX/Flax parsing chain."""
+    try:
+        from app.engines.jax.flax_parser import run_jax_parser
+        raw = run_jax_parser(model_file)
+        
+        # run_jax_parser mixes dynamic and AST. If AST was used, it adds a warning.
+        is_static = any("static source analysis" in w for w in raw.warnings)
+        confidence = Confidence.STATIC if is_static else Confidence.TRACED
+        
+        logger.info("job_id=%s parsed via JAX parser", job_id)
+        return raw, confidence
+    except ModelParsingError as jax_error:
+        logger.error("job_id=%s JAX parsing failed", job_id)
+        raise ModelParsingError(
+            f"Could not parse JAX model. Error: {jax_error}."
+        ) from jax_error
+
+
+
 def parse_project(job_id: str, model_file: Path) -> UniversalGraph:
     """
     Run the full parsing chain on a candidate model file and
@@ -178,6 +198,9 @@ def parse_project(job_id: str, model_file: Path) -> UniversalGraph:
     elif framework == Framework.TENSORFLOW:
         raw, confidence = _parse_tensorflow_file(job_id, model_file)
 
+    elif framework == Framework.JAX:
+        raw, confidence = _parse_jax_file(job_id, model_file)
+
     elif framework == Framework.UNKNOWN:
         # Route to custom/raw-code AST parser before giving up entirely.
         # This handles hand-written NumPy models and other framework-free
@@ -195,7 +218,7 @@ def parse_project(job_id: str, model_file: Path) -> UniversalGraph:
             ) from raw_error
 
     else:
-        # framework == Framework.JAX or any future framework without a parser
+        # Any future framework without a parser
         readable = framework.value
         raise FrameworkNotSupportedError(
             f"Detected {readable} in '{model_file.name}'. "
