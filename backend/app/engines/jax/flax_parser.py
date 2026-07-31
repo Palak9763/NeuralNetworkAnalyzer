@@ -183,7 +183,6 @@ def _parse_flax_module(model_class, file_path: Path) -> RawParseResult:
         warnings=[],
     )
 
-
 def _extract_from_tabulate(model, params, dummy_input, rng) -> RawParseResult | None:
     """Try to use flax.linen.tabulate to get structured layer info."""
     import flax.linen as nn
