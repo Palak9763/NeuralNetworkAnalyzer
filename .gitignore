@@ -18,5 +18,34 @@ __pycache__/
 # Frontend build cache
 frontend/tsconfig.tsbuildinfo
 
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# Upload storage
+backend/storage/uploads/
+backend/storage/uploads/**
+!backend/storage/uploads/.gitkeep
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploaded archives
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+
 #Root node_modules
 node_modules/
+
+# Environment
+backend/.env
+.env
+
+# OS
+.DS_Store
+Thumbs.db
