@@ -46,6 +46,10 @@ node_modules/
 backend/.env
 .env
 
+# Production secrets — NEVER commit these
+backend/.env.production
+docker-compose.override.yml
+
 # OS
 .DS_Store
 Thumbs.db

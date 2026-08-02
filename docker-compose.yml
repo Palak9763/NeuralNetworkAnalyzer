@@ -1,0 +1,59 @@
+﻿# docker-compose.yml
+#
+# Runs the NeuralNetworkAnalyzer backend and Caddy reverse proxy as a
+# self-contained stack on an Oracle Cloud Always Free VM.
+#
+# Key design decisions:
+#   - mem_limit: 8g  Leaves ~4 GB headroom out of the 12 GB VM RAM for the
+#                    OS, Caddy, and transient OS-level caching.  If the
+#                    backend OOMs (e.g. during a very large TF model parse),
+#                    Docker kills ONLY this container and restart:always
+#                    brings it back cleanly.  Tune this number up or down
+#                    based on `docker stats` peak readings during real testing.
+#   - backend port   Bound only to 127.0.0.1:8000, not 0.0.0.0:8000, so the
+#                    raw API port is never directly reachable from the internet.
+#                    All external traffic goes through Caddy (ports 80/443).
+#   - Named volumes  uploads_data persists uploaded files across container
+#                    restarts (but not `docker compose down -v`).  The
+#                    in-process cleanup thread handles long-term growth.
+#
+# Usage:
+#   docker compose up -d --build
+#   docker compose logs -f backend
+#   docker stats
+
+services:
+  backend:
+    build: ./backend
+    restart: always
+    mem_limit: 8g
+    memswap_limit: 10g           # 8g RAM + 2g swap headroom
+    ports:
+      - "127.0.0.1:8000:8000"   # localhost-only; Caddy proxies from outside
+    env_file:
+      - ./backend/.env.production  # create this on the VM; do NOT commit it
+    volumes:
+      - uploads_data:/app/storage/uploads
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"          # rotate after 10 MB
+        max-file: "3"            # keep 3 rotated files (~30 MB max total)
+
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    ports:
+      - "80:80"                  # HTTP (Let us Encrypt challenge + redirect)
+      - "443:443"                # HTTPS (automatic TLS via Let us Encrypt)
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data         # TLS cert storage (persists across restarts)
+      - caddy_config:/config
+    depends_on:
+      - backend
+
+volumes:
+  uploads_data:
+  caddy_data:
+  caddy_config:

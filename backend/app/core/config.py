@@ -16,11 +16,10 @@ How it connects:
 """
 
 from pathlib import Path
-
-from pydantic_settings import BaseSettings
-
-
 from typing import Optional
+
+from pydantic import field_validator
+from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     app_name: str = "NeuralNetworkAnalyzer"
@@ -48,8 +47,18 @@ class Settings(BaseSettings):
     max_upload_size_mb: int = 100
     allowed_extensions: tuple = (".py", ".zip")
 
-    # CORS
-    cors_origins: tuple = ("http://localhost:5173", "http://127.0.0.1:5173")
+    # CORS — accepts either a Python list (local dev) or a comma-separated
+    # string via environment variable:
+    #   NNA_CORS_ORIGINS=https://foo.vercel.app,http://localhost:5173
+    cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v):
+        """Parse a comma-separated string into a list of origin URLs."""
+        if isinstance(v, str):
+            return [o.strip() for o in v.split(",") if o.strip()]
+        return v
 
     @property
     def upload_dir(self) -> Path:

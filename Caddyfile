@@ -1,0 +1,31 @@
+﻿# Caddyfile
+#
+# Caddy reverse proxy with automatic Let's Encrypt HTTPS.
+#
+# SETUP REQUIRED:
+#   1. Replace "your.domain.com" with your actual domain name.
+#   2. Point a DNS A record at the Oracle VM's public IP BEFORE deploying,
+#      so Let's Encrypt can verify domain ownership.
+#   3. Ensure ports 80 and 443 are open in BOTH:
+#      - The VM's OS firewall (iptables/firewalld)
+#      - The Oracle Cloud VCN Security List / Network Security Group
+#
+# If you don't have a domain yet and want to test with raw IP:
+#   Replace the block below with:
+#       :80 {
+#           reverse_proxy backend:8000
+#       }
+#   and expose port 8000 on the backend directly (change 127.0.0.1:8000:8000
+#   to 8000:8000 in docker-compose.yml) for initial smoke-testing only.
+
+your.domain.com {
+    # Automatic HTTPS: Caddy provisions and renews the Let's Encrypt cert.
+    # TLS cert is stored in the caddy_data volume so it survives restarts.
+
+    # Proxy all requests to the FastAPI backend container.
+    reverse_proxy backend:8000
+
+    # Optional: increase timeouts for heavy ML parse requests.
+    # Caddy's default is 0 (no timeout) for proxied connections, so this
+    # is informational only -- remove or adjust if you add a CDN in front.
+}

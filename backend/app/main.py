@@ -15,6 +15,11 @@ How it connects:
     Run with: uvicorn app.main:app --reload
 """
 import logging
+import shutil
+import threading
+import time
+from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -65,10 +70,64 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
 )
+
+_cleanup_logger = logging.getLogger("upload_cleanup")
+
+
+def _cleanup_old_uploads(
+    upload_dir: Path,
+    max_age_hours: int = 24,
+    interval_secs: int = 3600,
+) -> None:
+    """
+    Background daemon thread: periodically delete job upload folders
+    that are older than max_age_hours.
+
+    Runs every interval_secs (default: 1 hour). Safe to leave running
+    indefinitely — the daemon flag ensures it dies when the gunicorn
+    worker process is recycled or the app shuts down.
+
+    Race condition analysis: parse requests complete in at most a few
+    minutes; the 24-hour threshold provides a large safety margin so
+    no in-progress parse is ever affected by this sweep.
+    """
+    while True:
+        time.sleep(interval_secs)  # sleep first so startup isn't slowed
+        try:
+            cutoff = time.time() - max_age_hours * 3600
+            for job_dir in upload_dir.iterdir():
+                if job_dir.is_dir() and job_dir.stat().st_mtime < cutoff:
+                    shutil.rmtree(job_dir, ignore_errors=True)
+                    _cleanup_logger.info("Removed stale upload dir: %s", job_dir.name)
+        except Exception as exc:  # noqa: BLE001
+            _cleanup_logger.warning("Upload cleanup sweep failed: %s", exc)
+
+
+@asynccontextmanager
+async def lifespan(app):
+    """Startup: launch upload-cleanup daemon. Shutdown: nothing to do
+    (daemon thread dies with the process automatically)."""
+    upload_dir = settings.upload_dir  # also ensures directory exists
+    t = threading.Thread(
+        target=_cleanup_old_uploads,
+        args=(upload_dir,),
+        daemon=True,
+        name="upload-cleanup",
+    )
+    t.start()
+    _cleanup_logger.info(
+        "Upload cleanup thread started (max_age=24h, interval=1h, dir=%s)",
+        upload_dir,
+    )
+    yield
+    # Daemon threads are terminated automatically on process exit.
+
+
 app = FastAPI(
     title=settings.app_name,
     description="Analyzes deep learning projects and generates interactive neural network architecture diagrams.",
     version="0.1.0-phase1",
+    lifespan=lifespan,
 )
 
 app.add_middleware(

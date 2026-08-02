@@ -1,0 +1,40 @@
+﻿# Python virtual environments
+venv/
+.venv/
+env/
+test_venv/
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local environment secrets — NEVER bake into the image
+.env
+.env.*
+
+# Local databases — production uses Supabase Postgres
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploaded files — ephemeral, mounted as a named volume at runtime
+storage/uploads/
+
+# Sample/test model files — no need in production image
+sample_models/
+*.onnx
+*.onnx.data
+
+# Scratch and test scripts — not part of the app
+scratch_*.py
+test_*.py
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
