@@ -39,7 +39,8 @@ backend/storage/uploads/**
 *.tar
 *.gz
 
-
+#Root node_modules
+node_modules/
 
 # Environment
 backend/.env
