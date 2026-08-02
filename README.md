@@ -6,7 +6,7 @@
 [![CLI Package](https://img.shields.io/badge/PyPI-neuralviz--0.2.0-orange.svg)](https://pypi.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-> **NeuralNetworkAnalyzer** is an enterprise-grade AI platform and CLI tool (`neuralviz`) that automatically inspects deep learning model code, detects framework usage (PyTorch, Hugging Face Transformers, TensorFlow/Keras, JAX/Flax, ONNX), and builds interactive, visual architecture diagrams with layer properties, parameter counts, and skip-connection topology.
+> NeuralNetworkAnalyzer is an enterprise-grade AI platform and CLI tool (`neuralviz`) that automatically inspects deep learning model code, detects framework usage (PyTorch, Hugging Face Transformers, TensorFlow/Keras, JAX/Flax, ONNX), and builds interactive, visual architecture diagrams with layer properties, parameter counts, and skip-connection topology.
 
 ---
 
