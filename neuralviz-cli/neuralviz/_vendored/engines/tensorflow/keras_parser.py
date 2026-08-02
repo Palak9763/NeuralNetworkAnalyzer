@@ -1,6 +1,3 @@
-# VENDORED COPY — synced from backend/app/engines\tensorflow\keras_parser.py
-# Part of the neuralviz CLI package. Sync manually if upstream changes.
-
 """
 engines/tensorflow/keras_parser.py
 
@@ -9,7 +6,6 @@ Why this file exists:
     It supports both Functional/Sequential API models (Tier A) and Subclassed models (Tier B),
     mapping both to the Universal Graph JSON contract by outputting RawParseResult.
 """
-
 import importlib.util
 import logging
 import sys
@@ -21,7 +17,6 @@ from neuralviz._vendored.core.exceptions import ModelParsingError
 from neuralviz._vendored.engines.pytorch.ast_parser import RawEdge, RawNode, RawParseResult
 
 logger = logging.getLogger(__name__)
-
 
 def _load_module_from_path(file_path: Path):
     """Dynamically import a .py file as a standalone module so its classes
@@ -41,7 +36,6 @@ def _load_module_from_path(file_path: Path):
         sys.modules.pop(module_name, None)
 
     return module
-
 
 def _is_keras_model_class(obj) -> bool:
     if not isinstance(obj, type):
@@ -66,7 +60,6 @@ def _is_keras_model_class(obj) -> bool:
         pass
     return False
 
-
 def _is_keras_model_instance(obj) -> bool:
     try:
         import tensorflow as tf
@@ -81,7 +74,6 @@ def _is_keras_model_instance(obj) -> bool:
     except Exception:
         pass
     return False
-
 
 def _find_keras_model(module):
     """Search module variables for (a) already built Keras model instances,
@@ -119,7 +111,6 @@ def _find_keras_model(module):
         f"instantiated without constructor arguments. Last error: {last_error}"
     )
 
-
 def _shape_to_int_list(shape):
     """Convert Keras shapes to list[int], mapping None/unknown to -1 to avoid Pydantic crash."""
     if shape is None:
@@ -154,7 +145,6 @@ def _shape_to_int_list(shape):
                 out.append(-1)
     return out
 
-
 def _collect_leaf_layers(layer, seen=None):
     """Recursively collect leaf layers, descending into nested models/layers.
 
@@ -178,12 +168,8 @@ def _collect_leaf_layers(layer, seen=None):
             leaves.extend(_collect_leaf_layers(sub_layer, seen))
         return leaves
 
-    # --- Fall back to ._layers (tf.keras.layers.Layer subclasses in Keras 3) ---
-    # ._layers may contain weights/variables as well as sublayers; filter to
-    # objects that have a `call` method (i.e. are actual Keras layers).
     private_children = getattr(layer, "_layers", None)
     if private_children:
-        # Only descend if there are real sub-layers (not just weights etc.)
         real_sub_layers = [
             c for c in private_children
             if hasattr(c, "call") and c is not layer
@@ -194,9 +180,7 @@ def _collect_leaf_layers(layer, seen=None):
                 leaves.extend(_collect_leaf_layers(sub_layer, seen))
             return leaves
 
-    # This layer has no children - it is a leaf
     return [layer]
-
 
 def _parse_functional_model(model) -> RawParseResult:
     """Tier A extraction directly from Keras Functional/Sequential graph connectivity."""
@@ -204,7 +188,6 @@ def _parse_functional_model(model) -> RawParseResult:
     edges = []
     node_id_by_layer_name = {}
 
-    # 1. Extract layer info as RawNodes
     for idx, layer in enumerate(model.layers):
         node_id = f"node_{idx+1}"
         node_id_by_layer_name[layer.name] = node_id
@@ -294,7 +277,6 @@ def _parse_functional_model(model) -> RawParseResult:
         total_flops=None,
         warnings=[],
     )
-
 
 def _parse_subclassed_model(model) -> RawParseResult:
     """Tier B extraction via monkey-patching leaf layer calls and tracking tensors."""
@@ -487,7 +469,6 @@ def _parse_subclassed_model(model) -> RawParseResult:
         total_flops=None,
         warnings=[],
     )
-
 
 def run_keras_parser(file_path: Path) -> RawParseResult:
     """Trace a TensorFlow/Keras model file and return a RawParseResult."""
