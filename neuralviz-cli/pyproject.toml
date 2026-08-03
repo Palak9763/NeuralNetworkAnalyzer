@@ -5,7 +5,7 @@ description = "Instantly visualize your PyTorch / TensorFlow model's architectur
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
-keywords = ["neural-network", "pytorch", "tensorflow", "visualization", "cli", "deep-learning"]
+keywords = ["neural-network", "pytorch", "tensorflow", "jax", "flax", "visualization", "cli", "deep-learning"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",

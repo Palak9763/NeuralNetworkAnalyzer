@@ -2,22 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Dark theme (default) ─────────────── */
+/* ── Light theme (default) ────────────── */
 :root,
-.dark {
-  --color-panel: #12141c;
-  --color-panel-light: #1a1d29;
-  --color-surface: #0d0e14;
-  --color-bg: #0d0e14;
-  --color-text: #ffffff;
-  --color-text-secondary: #9ca3af;
-  --color-text-muted: #6b7280;
-  --color-border: rgba(255, 255, 255, 0.05);
-  --color-card-bg: #0a0c12;
-  --color-input-bg: #0a0c12;
-}
-
-/* ── Light theme ──────────────────────── */
 .light {
   --color-panel: #f5f3ff;
   --color-panel-light: #ede9fe;
@@ -29,6 +15,20 @@
   --color-border: rgba(0, 0, 0, 0.08);
   --color-card-bg: #ffffff;
   --color-input-bg: #ffffff;
+}
+
+/* ── Dark theme ───────────────────────── */
+.dark {
+  --color-panel: #12141c;
+  --color-panel-light: #1a1d29;
+  --color-surface: #0d0e14;
+  --color-bg: #0d0e14;
+  --color-text: #ffffff;
+  --color-text-secondary: #9ca3af;
+  --color-text-muted: #6b7280;
+  --color-border: rgba(255, 255, 255, 0.05);
+  --color-card-bg: #0a0c12;
+  --color-input-bg: #0a0c12;
 }
 
 body {
