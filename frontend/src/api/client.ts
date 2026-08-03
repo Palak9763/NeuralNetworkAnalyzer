@@ -14,7 +14,7 @@
 import axios from "axios";
 import type { SourceResponse, UniversalGraph, UploadResponse } from "../types/graph";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 axios.interceptors.request.use((config) => {
   const token = localStorage.getItem("nna-token");
