@@ -15,10 +15,11 @@
 Deep learning models are often defined across complex Python source files, Hugging Face hub checkpoints, or serialized ONNX binaries. Understanding, reviewing, and debugging these architectures manually requires tedious code reading or heavy execution setup.
 
 **NeuralNetworkAnalyzer** solves this with a **Zero-Weight-Loading, Tiered Parsing Engine**:
+
 1. **Framework-Agnostic Contract**: Converts any deep learning architecture into a single fixed JSON schema (`UniversalGraph`).
 2. **Zero-Memory Hugging Face Parsing**: Parses models like TrOCR, ViT, LLaMA, GPT-2, and BLIP by fetching **only lightweight `config.json` (~3 KB)**, preventing system memory spikes and `OSError 1455` (Windows paging file limits).
 3. **Multi-Tier Execution Fallback**: Combines dynamic execution tracing (`torch.fx`, Keras tracing), ONNX graph export, and static AST code parsing (`ast.NodeVisitor`) so even unrunnable, incomplete code can be visualized.
-4. **Dual Interfaces**: 
+4. **Dual Interfaces**:
    - **Web Application**: Interactive React Flow canvas with zoom, pan, minimap, group collapsing, and layer property inspection.
    - **CLI Tool (`neuralviz`)**: Zero-config terminal launcher supporting interactive browser mode, terminal ASCII rendering, and JSON dumping.
 
@@ -130,14 +131,14 @@ sequenceDiagram
 
 ## ⚡ Framework Support Matrix
 
-| Framework / Ecosystem | Detection Import / Extension | Parsing Strategy | Weight Loading |
-|---|---|---|:---:|
-| **Hugging Face Transformers** | `transformers`, `diffusers` | **Tier 0 Config-Only** (`AutoConfig.from_pretrained`) | ❌ **No (0 MB)** |
-| **PyTorch (`nn.Module`)** | `torch`, `timm`, `peft`, `accelerate` | `torch.fx` → ONNX Export → AST Visitor | ❌ Static / Optional |
-| **TensorFlow / Keras** | `tensorflow`, `keras`, `tf_keras` | Keras Functional/Sequential → `tf2onnx` | ❌ Static / Optional |
-| **JAX / Flax / Haiku** | `jax`, `flax`, `haiku`, `optax` | Flax Module tabulate → JAX AST Engine | ❌ Static / Optional |
-| **ONNX** | `.onnx` extension, `onnxruntime` | Direct ONNX Protobuf Protostructure Engine | ❌ No |
-| **Framework-Free Code** | NumPy / Raw Math Operations | Custom AST Pattern Matching Engine | ❌ No |
+| Framework / Ecosystem         | Detection Import / Extension          | Parsing Strategy                                      |    Weight Loading    |
+| ----------------------------- | ------------------------------------- | ----------------------------------------------------- | :------------------: |
+| **Hugging Face Transformers** | `transformers`, `diffusers`           | **Tier 0 Config-Only** (`AutoConfig.from_pretrained`) |   ❌ **No (0 MB)**   |
+| **PyTorch (`nn.Module`)**     | `torch`, `timm`, `peft`, `accelerate` | `torch.fx` → ONNX Export → AST Visitor                | ❌ Static / Optional |
+| **TensorFlow / Keras**        | `tensorflow`, `keras`, `tf_keras`     | Keras Functional/Sequential → `tf2onnx`               | ❌ Static / Optional |
+| **JAX / Flax / Haiku**        | `jax`, `flax`, `haiku`, `optax`       | Flax Module tabulate → JAX AST Engine                 | ❌ Static / Optional |
+| **ONNX**                      | `.onnx` extension, `onnxruntime`      | Direct ONNX Protobuf Protostructure Engine            |        ❌ No         |
+| **Framework-Free Code**       | NumPy / Raw Math Operations           | Custom AST Pattern Matching Engine                    |        ❌ No         |
 
 ---
 
@@ -152,7 +153,8 @@ python -m venv venv
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
-*API docs available at:* `http://localhost:8000/docs`
+
+_API docs available at:_ `http://localhost:8000/docs`
 
 ### 2. Run Frontend Client (React + Vite)
 
@@ -161,7 +163,8 @@ cd frontend
 npm install
 npm run dev
 ```
-*Open web interface at:* `http://localhost:5173`
+
+_Open web interface at:_ `http://localhost:5173`
 
 ---
 

@@ -15,11 +15,12 @@ pyjwt
 passlib[bcrypt]
 bcrypt
 httpx
-tensorflow-cpu>=2.16
-jax[cpu]
-flax
+# Removed for Render Free Tier
+# tensorflow-cpu>=2.16
+# jax[cpu]
+# flax
 onnx>=1.15
 onnxruntime>=1.16
 onnxscript
-tf2onnx>=1.16
+# tf2onnx>=1.16
 
